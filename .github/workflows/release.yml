@@ -1,0 +1,102 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version ohne v, z. B. 1.0.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: App bauen und veröffentlichen
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Version bestimmen
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+
+      - name: xcodegen installieren
+        run: brew install xcodegen
+
+      - name: Logikprüfungen
+        run: ./build.sh check
+
+      - name: App bauen
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: ./build.sh build
+
+      - name: Bundle prüfen
+        run: |
+          APP=.build/Build/Products/Release/InvoiceQR.app
+          plutil -lint "$APP/Contents/Info.plist"
+          plutil -extract NSServices.0.NSMessage raw -o - "$APP/Contents/Info.plist" | grep -qx createPaymentQR
+          test "$(plutil -extract CFBundleShortVersionString raw -o - "$APP/Contents/Info.plist")" = "${{ steps.version.outputs.version }}"
+          codesign -dv "$APP" 2>&1 | head -3
+
+      - name: Verpacken
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            .build/Build/Products/Release/InvoiceQR.app \
+            "InvoiceQR-${{ steps.version.outputs.version }}.zip"
+          shasum -a 256 "InvoiceQR-${{ steps.version.outputs.version }}.zip" > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cat > notes.md <<'NOTES'
+          macOS-App, die Rechnungen per OpenAI ausliest und die Zahlungsdaten als
+          EPC069-12-QR-Code (GiroCode) anzeigt.
+
+          ## Installieren
+
+          1. `InvoiceQR-VERSION.zip` herunterladen und entpacken.
+          2. `InvoiceQR.app` nach `/Programme` ziehen.
+          3. **Erster Start: Rechtsklick auf die App → „Öffnen"**, dann im Dialog nochmal
+             „Öffnen". Der normale Doppelklick wird abgelehnt, weil die App ad-hoc signiert
+             und nicht notarisiert ist.
+          4. `⌘,` und OpenAI-API-Key eintragen (landet im Schlüsselbund).
+
+          Meldet macOS „beschädigt und kann nicht geöffnet werden", hilft:
+
+              xattr -dr com.apple.quarantine /Applications/InvoiceQR.app
+
+          ## Benutzen
+
+          Rechtsklick auf eine Rechnung → Dienste → „Zahlungs-QR erzeugen".
+          Oder „Öffnen mit", oder Drag & Drop aufs Fenster, oder ⌘O.
+
+          Erscheint der Dienste-Eintrag nicht, einmal
+          `/System/Library/CoreServices/pbs -flush` ausführen.
+
+          ## Vor dem Überweisen
+
+          Empfänger, IBAN und Betrag gegen die Rechnung prüfen. Das Modell kann sich
+          irren, gerade wenn mehrere IBANs im Dokument stehen.
+          NOTES
+          sed -i '' "s/InvoiceQR-VERSION.zip/InvoiceQR-$VERSION.zip/" notes.md
+
+          gh release create "v$VERSION" \
+            --title "InvoiceQR $VERSION" \
+            --notes-file notes.md \
+            "InvoiceQR-$VERSION.zip" \
+            SHA256SUMS.txt

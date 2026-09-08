@@ -5,6 +5,19 @@
 macOS-App, die Rechnungen per OpenAI ausliest und die Zahlungsdaten als **EPC069-12 / GiroCode**
 QR-Code anzeigt. Mit der Banking-App scannen statt IBAN und Betrag abzutippen.
 
+## Herunterladen
+
+Fertige App: **[Releases](https://github.com/JanHailfinger/invoiceQRCodeGeneratorMac/releases/latest)**
+→ `InvoiceQR-x.y.z.zip`.
+
+Die App ist ad-hoc signiert und nicht notarisiert. Beim **ersten Start** deshalb
+Rechtsklick auf die App → „Öffnen“ → im Dialog nochmal „Öffnen“. Der Doppelklick allein wird von
+Gatekeeper abgelehnt. Bei „beschädigt und kann nicht geöffnet werden“:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/InvoiceQR.app
+```
+
 ## Bauen
 
 ```bash

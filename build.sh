@@ -13,11 +13,17 @@ generate() {
 
 build() {
     generate
+    # VERSION setzt die Versionsnummer im Bundle, z. B. VERSION=1.0.0 ./build.sh build
+    local overrides=()
+    if [ -n "${VERSION:-}" ]; then
+        overrides+=("MARKETING_VERSION=$VERSION")
+    fi
     xcodebuild \
         -project InvoiceQR.xcodeproj \
         -scheme InvoiceQR \
         -configuration "$CONFIG" \
         -derivedDataPath "$BUILD_DIR" \
+        "${overrides[@]}" \
         build
 }
 
