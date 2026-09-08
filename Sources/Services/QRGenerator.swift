@@ -5,7 +5,9 @@ import CoreImage.CIFilterBuiltins
 /// EPC-Nutzdaten -> QR-Bild. Fehlerkorrektur M, wie in EPC069-12 empfohlen.
 enum QRGenerator {
 
-    private static let context = CIContext(options: [.useSoftwareRenderer: false])
+    // CIContext ist laut Apple thread-safe; ein geteilter Context spart das Neuaufsetzen
+    // des Renderers pro QR-Code. Älteren SDKs fehlt die Sendable-Konformität.
+    nonisolated(unsafe) private static let context = CIContext(options: [.useSoftwareRenderer: false])
 
     static func image(for payload: String, pixelSize: CGFloat = 1024) -> NSImage? {
         guard !payload.isEmpty else { return nil }
