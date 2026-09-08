@@ -39,8 +39,18 @@ jobs:
           plutil -lint "$PLIST"
           plutil -extract NSServices.0.NSMessage raw -o - "$PLIST" | grep -qx createPaymentQR
           plutil -extract CFBundleDocumentTypes.0.LSItemContentTypes.0 raw -o - "$PLIST" | grep -qx com.adobe.pdf
-          test -f "$RESOURCES/en.lproj/Localizable.strings"
-          test -f "$RESOURCES/de.lproj/Localizable.strings"
+          # A missing localization is invisible at runtime, so fail the build over it.
+          for LANGUAGE in en de; do
+            STRINGS="$RESOURCES/$LANGUAGE.lproj/Localizable.strings"
+            if [ ! -f "$STRINGS" ]; then
+              echo "::error::$LANGUAGE.lproj/Localizable.strings is missing from the bundle."
+              ls -R "$RESOURCES"
+              exit 1
+            fi
+            COUNT=$(plutil -convert json -o - "$STRINGS" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
+            echo "$LANGUAGE: $COUNT strings"
+            test "$COUNT" -gt 90
+          done
           echo "Service, document types and both localizations are in the bundle."
 
       - name: Package app bundle

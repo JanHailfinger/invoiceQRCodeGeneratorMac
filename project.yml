@@ -5,6 +5,7 @@ options:
     macOS: "14.0"
   createIntermediateGroups: true
   groupSortPosition: top
+  developmentLanguage: en
 
 settings:
   base:
@@ -32,8 +33,10 @@ targets:
     platform: macOS
     sources:
       - path: Sources
-      - path: Resources/Localizable.xcstrings
-        buildPhase: resources
+      # Referencing the folder lets xcodegen build a variant group from the
+      # .lproj directories, which is what fills knownRegions.
+      - path: Resources
+        excludes: ["Info.plist"]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.rvm.InvoiceQR

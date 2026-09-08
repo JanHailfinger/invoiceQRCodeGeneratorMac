@@ -20,10 +20,14 @@ a GitHub release. Without signing secrets it falls back to ad-hoc instead of fai
 ## Rules that matter here
 
 - **Everything in this repository is written in English** - code, comments, commit messages,
-  documentation. The user-facing German lives only in `Resources/Localizable.xcstrings`.
-- **New user-facing strings need a catalog entry.** English literals are the keys: `Text("…")` in
-  SwiftUI, `NSLocalizedString` elsewhere. `SWIFT_EMIT_LOC_STRINGS` is off, so the catalog is
-  hand-maintained and a missing key silently falls back to English.
+  documentation. The user-facing German lives only in `Resources/de.lproj/Localizable.strings`
+  and in the NSMenuItem dictionary in `Info.plist`.
+- **New user-facing strings need an entry in both `.strings` files.** English literals are the
+  keys: `Text("…")` in SwiftUI, `NSLocalizedString` elsewhere. Both files are hand-maintained and
+  a missing key silently falls back to the key itself, so German gaps are invisible at runtime.
+- **`knownRegions` comes from the `.lproj` folders.** `project.yml` references the whole
+  `Resources` folder for exactly that reason; listing the `.strings` files individually leaves
+  `de` out of the project and Xcode 16 then drops `de.lproj` from the bundle without a warning.
 - **EPC069-12 is a standard, not a convention.** Field order, lengths and the "structured
   reference *or* remittance text" rule live in `Sources/Model/EPCPayload.swift`. Changes there need
   a counterpart in `Tests/PayloadChecks/main.swift`.

@@ -140,7 +140,7 @@ Sources/
   Views/       drop zone, form, QR panel, settings
 Resources/
   Info.plist            NSServices and CFBundleDocumentTypes
-  Localizable.xcstrings  English source strings with German translations
+  en.lproj/, de.lproj/   Localizable.strings, English literals as keys
 Tests/
   PayloadChecks/  checks that run without an Xcode test host
 ```
