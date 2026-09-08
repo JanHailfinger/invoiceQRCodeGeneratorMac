@@ -1,0 +1,54 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Bauen und prüfen
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain melden
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: xcodegen installieren
+        run: brew install xcodegen
+
+      - name: Logikprüfungen
+        run: ./build.sh check
+
+      - name: App bauen
+        run: ./build.sh build
+
+      - name: Finder-Dienst im Bundle prüfen
+        run: |
+          PLIST=.build/Build/Products/Release/InvoiceQR.app/Contents/Info.plist
+          plutil -lint "$PLIST"
+          plutil -extract NSServices.0.NSMessage raw -o - "$PLIST" | grep -qx createPaymentQR
+          plutil -extract CFBundleDocumentTypes.0.LSItemContentTypes.0 raw -o - "$PLIST" | grep -qx com.adobe.pdf
+          echo "NSServices und Dokumenttypen sind im Bundle."
+
+      - name: App-Bundle verpacken
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            .build/Build/Products/Release/InvoiceQR.app \
+            InvoiceQR.app.zip
+
+      - name: App-Bundle als Artefakt ablegen
+        uses: actions/upload-artifact@v4
+        with:
+          name: InvoiceQR-app
+          path: InvoiceQR.app.zip
+          if-no-files-found: error

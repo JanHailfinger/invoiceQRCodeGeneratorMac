@@ -1,0 +1,4 @@
+.build/
+InvoiceQR.xcodeproj/
+*.xcuserstate
+.DS_Store
