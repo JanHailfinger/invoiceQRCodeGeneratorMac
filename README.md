@@ -8,7 +8,11 @@ QR-Code anzeigt. Mit der Banking-App scannen statt IBAN und Betrag abzutippen.
 ## Herunterladen
 
 Fertige App: **[Releases](https://github.com/JanHailfinger/invoiceQRCodeGeneratorMac/releases/latest)**
-→ `InvoiceQR-x.y.z.zip`.
+
+- `InvoiceQR-x.y.z.dmg` — öffnen, App nach „Programme" ziehen.
+- `InvoiceQR-x.y.z.pkg` — Doppelklick, Installer legt die App nach `/Programme`. Der Weg, wenn der
+  Finder-Dienst sofort greifen soll, weil macOS Dienste nur aus `/Programme` und
+  `~/Programme` anbietet.
 
 Ob ein Build signiert ist, stehen die Release-Notes dazu. Ist er nur ad-hoc signiert, verlangt
 Gatekeeper beim **ersten Start** Rechtsklick auf die App → „Öffnen“ → im Dialog nochmal „Öffnen“.
