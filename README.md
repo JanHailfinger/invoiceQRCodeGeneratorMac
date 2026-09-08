@@ -10,9 +10,9 @@ QR-Code anzeigt. Mit der Banking-App scannen statt IBAN und Betrag abzutippen.
 Fertige App: **[Releases](https://github.com/JanHailfinger/invoiceQRCodeGeneratorMac/releases/latest)**
 → `InvoiceQR-x.y.z.zip`.
 
-Die App ist ad-hoc signiert und nicht notarisiert. Beim **ersten Start** deshalb
-Rechtsklick auf die App → „Öffnen“ → im Dialog nochmal „Öffnen“. Der Doppelklick allein wird von
-Gatekeeper abgelehnt. Bei „beschädigt und kann nicht geöffnet werden“:
+Ob ein Build signiert ist, stehen die Release-Notes dazu. Ist er nur ad-hoc signiert, verlangt
+Gatekeeper beim **ersten Start** Rechtsklick auf die App → „Öffnen“ → im Dialog nochmal „Öffnen“.
+Bei „beschädigt und kann nicht geöffnet werden“:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/InvoiceQR.app
@@ -29,6 +29,47 @@ xattr -dr com.apple.quarantine /Applications/InvoiceQR.app
 
 Voraussetzungen: Xcode und `xcodegen` (`brew install xcodegen`). Das Xcode-Projekt wird aus
 `project.yml` generiert und ist nicht eingecheckt.
+
+## Signieren und notarisieren
+
+Ohne Developer-ID-Zertifikat baut alles ad-hoc signiert – lokal völlig ausreichend, für die
+Weitergabe nicht. Mit Zertifikat:
+
+```bash
+export APPLE_TEAM_ID=XXXXXXXXXX          # 10 Zeichen, developer.apple.com/account
+export NOTARY_PROFILE=notarytool         # oder ASC_KEY_ID/ASC_ISSUER_ID/ASC_KEY_PATH
+VERSION=1.0.0 ./build.sh dist
+```
+
+`dist` signiert mit dem ersten „Developer ID Application“-Zertifikat aus dem Schlüsselbund
+(oder `SIGN_IDENTITY`), reicht zur Notarisierung ein, wartet, staplet das Ticket ins Bundle und
+prüft am Ende mit `codesign --verify` und `spctl`. Ohne Notarisierungs-Zugang bleibt es beim
+signierten, nicht notarisierten Bundle und sagt das auch.
+
+Zugangsdaten einmalig hinterlegen, dann genügt `NOTARY_PROFILE`:
+
+```bash
+xcrun notarytool store-credentials notarytool \
+  --apple-id DEINE@apple-id.de --team-id XXXXXXXXXX --password APP-SPEZIFISCHES-PASSWORT
+```
+
+### In der CI
+
+Der Release-Workflow signiert und notarisiert, sobald diese Repository-Secrets liegen. Fehlen sie,
+läuft der Release ad-hoc signiert weiter und schreibt eine Warnung ins Log.
+
+| Secret | Inhalt |
+|---|---|
+| `MACOS_CERTIFICATE_P12` | Developer-ID-Zertifikat als `.p12`, base64 (`base64 -i cert.p12 \| pbcopy`) |
+| `MACOS_CERTIFICATE_PASSWORD` | Passwort des `.p12` |
+| `MACOS_SIGN_IDENTITY` | optional, z. B. `Developer ID Application: Name (TEAMID)` |
+| `APPLE_TEAM_ID` | Team ID |
+| `ASC_KEY_ID` | App-Store-Connect-API-Key-ID |
+| `ASC_ISSUER_ID` | Issuer ID |
+| `ASC_KEY_P8` | `.p8`-Datei, base64 |
+
+Der Schlüsselbund wird pro Lauf temporär angelegt und danach gelöscht. Secrets gehen bei
+Fork-Pull-Requests nicht mit, und der Workflow läuft ohnehin nur auf Tags.
 
 ## Einrichten
 

@@ -8,7 +8,11 @@ mit der Banking-App.
 ```bash
 ./build.sh run     # xcodegen + xcodebuild Release, startet die App
 ./build.sh check   # Logikprüfungen (IBAN, Betragsparser, EPC-Nutzdaten)
+./build.sh dist    # signiert, notarisiert, verpackt (braucht Developer-ID-Zertifikat)
 ```
+
+Tag `v*` pushen löst den Release-Workflow aus: baut, notarisiert und hängt das Bundle an einen
+GitHub-Release. Ohne Signier-Secrets fällt er auf ad-hoc zurück statt zu scheitern.
 
 `InvoiceQR.xcodeproj` ist generiert und nicht eingecheckt – Targets und Build-Settings gehören in
 `project.yml`, nicht ins Projekt. Neue Dateien unter `Sources/` werden automatisch erfasst.

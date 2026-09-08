@@ -31,72 +31,143 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION"
 
+      # Ohne Zertifikat-Secrets läuft der Release ad-hoc signiert weiter,
+      # damit ein Tag nie am fehlenden Schlüssel scheitert.
+      - name: Signier-Zugangsdaten prüfen
+        id: creds
+        env:
+          CERT: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          if [ -n "$CERT" ] && [ -n "$TEAM" ]; then
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+            echo "Developer-ID-Zertifikat vorhanden."
+            if [ -n "$ASC_KEY" ]; then
+              echo "notarize=true" >> "$GITHUB_OUTPUT"
+              echo "App Store Connect API-Key vorhanden, wird notarisiert."
+            else
+              echo "notarize=false" >> "$GITHUB_OUTPUT"
+              echo "::warning::Kein ASC_KEY_P8 - signiert, aber nicht notarisiert."
+            fi
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "notarize=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Keine Signier-Secrets - Release wird ad-hoc signiert."
+          fi
+
       - name: xcodegen installieren
         run: brew install xcodegen
 
       - name: Logikprüfungen
         run: ./build.sh check
 
-      - name: App bauen
+      - name: Zertifikat in temporären Schlüsselbund importieren
+        if: steps.creds.outputs.signed == 'true'
+        env:
+          CERT: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          echo "$CERT" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$CERT_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
+
+          security find-identity -v -p codesigning | grep "Developer ID Application"
+
+      - name: Signiert bauen, notarisieren, verpacken
+        if: steps.creds.outputs.signed == 'true'
         env:
           VERSION: ${{ steps.version.outputs.version }}
-        run: ./build.sh build
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          if [ -n "$ASC_KEY_P8" ]; then
+            echo "$ASC_KEY_P8" | base64 --decode > "$RUNNER_TEMP/asc.p8"
+            export ASC_KEY_PATH="$RUNNER_TEMP/asc.p8"
+          fi
+          ./build.sh dist
+          rm -f "$RUNNER_TEMP/asc.p8"
+
+      - name: Ad-hoc bauen und verpacken
+        if: steps.creds.outputs.signed != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          ./build.sh build
+          ditto -c -k --sequesterRsrc --keepParent \
+            .build/Build/Products/Release/InvoiceQR.app \
+            "InvoiceQR-$VERSION.zip"
 
       - name: Bundle prüfen
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           APP=.build/Build/Products/Release/InvoiceQR.app
           plutil -lint "$APP/Contents/Info.plist"
           plutil -extract NSServices.0.NSMessage raw -o - "$APP/Contents/Info.plist" | grep -qx createPaymentQR
-          test "$(plutil -extract CFBundleShortVersionString raw -o - "$APP/Contents/Info.plist")" = "${{ steps.version.outputs.version }}"
-          codesign -dv "$APP" 2>&1 | head -3
-
-      - name: Verpacken
-        run: |
-          ditto -c -k --sequesterRsrc --keepParent \
-            .build/Build/Products/Release/InvoiceQR.app \
-            "InvoiceQR-${{ steps.version.outputs.version }}.zip"
-          shasum -a 256 "InvoiceQR-${{ steps.version.outputs.version }}.zip" > SHA256SUMS.txt
+          test "$(plutil -extract CFBundleShortVersionString raw -o - "$APP/Contents/Info.plist")" = "$VERSION"
+          codesign -dv --verbose=2 "$APP" 2>&1 | grep -E "Signature|TeamIdentifier|flags"
+          shasum -a 256 "InvoiceQR-$VERSION.zip" > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Release anlegen
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
+          NOTARIZED: ${{ steps.creds.outputs.notarize }}
         run: |
-          cat > notes.md <<'NOTES'
-          macOS-App, die Rechnungen per OpenAI ausliest und die Zahlungsdaten als
-          EPC069-12-QR-Code (GiroCode) anzeigt.
-
-          ## Installieren
-
-          1. `InvoiceQR-VERSION.zip` herunterladen und entpacken.
-          2. `InvoiceQR.app` nach `/Programme` ziehen.
-          3. **Erster Start: Rechtsklick auf die App → „Öffnen"**, dann im Dialog nochmal
-             „Öffnen". Der normale Doppelklick wird abgelehnt, weil die App ad-hoc signiert
-             und nicht notarisiert ist.
-          4. `⌘,` und OpenAI-API-Key eintragen (landet im Schlüsselbund).
-
-          Meldet macOS „beschädigt und kann nicht geöffnet werden", hilft:
-
-              xattr -dr com.apple.quarantine /Applications/InvoiceQR.app
-
-          ## Benutzen
-
-          Rechtsklick auf eine Rechnung → Dienste → „Zahlungs-QR erzeugen".
-          Oder „Öffnen mit", oder Drag & Drop aufs Fenster, oder ⌘O.
-
-          Erscheint der Dienste-Eintrag nicht, einmal
-          `/System/Library/CoreServices/pbs -flush` ausführen.
-
-          ## Vor dem Überweisen
-
-          Empfänger, IBAN und Betrag gegen die Rechnung prüfen. Das Modell kann sich
-          irren, gerade wenn mehrere IBANs im Dokument stehen.
-          NOTES
-          sed -i '' "s/InvoiceQR-VERSION.zip/InvoiceQR-$VERSION.zip/" notes.md
+          {
+            echo "macOS-App, die Rechnungen per OpenAI ausliest und die Zahlungsdaten als"
+            echo "EPC069-12-QR-Code (GiroCode) anzeigt."
+            echo
+            echo "## Installieren"
+            echo
+            echo "1. \`InvoiceQR-$VERSION.zip\` herunterladen und entpacken."
+            echo "2. \`InvoiceQR.app\` nach \`/Programme\` ziehen."
+            if [ "$NOTARIZED" = "true" ]; then
+              echo "3. Doppelklick. Die App ist mit Developer ID signiert und von Apple notarisiert."
+            else
+              echo "3. **Erster Start: Rechtsklick auf die App -> „Öffnen\"**, dann im Dialog nochmal"
+              echo "   „Öffnen\". Der Doppelklick wird abgelehnt, weil dieser Build nicht notarisiert ist."
+              echo
+              echo "   Bei „beschädigt und kann nicht geöffnet werden\":"
+              echo
+              echo "       xattr -dr com.apple.quarantine /Applications/InvoiceQR.app"
+            fi
+            echo "4. \`⌘,\` und OpenAI-API-Key eintragen (landet im Schlüsselbund)."
+            echo
+            echo "## Benutzen"
+            echo
+            echo "Rechtsklick auf eine Rechnung -> Dienste -> „Zahlungs-QR erzeugen\"."
+            echo "Oder „Öffnen mit\", oder Drag & Drop aufs Fenster, oder ⌘O."
+            echo
+            echo "Fehlt der Dienste-Eintrag, einmal \`/System/Library/CoreServices/pbs -flush\`."
+            echo
+            echo "## Vor dem Überweisen"
+            echo
+            echo "Empfänger, IBAN und Betrag gegen die Rechnung prüfen. Das Modell kann sich irren,"
+            echo "gerade wenn mehrere IBANs im Dokument stehen."
+          } > notes.md
 
           gh release create "v$VERSION" \
             --title "InvoiceQR $VERSION" \
             --notes-file notes.md \
             "InvoiceQR-$VERSION.zip" \
             SHA256SUMS.txt
+
+      - name: Schlüsselbund entfernen
+        if: always() && steps.creds.outputs.signed == 'true'
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
