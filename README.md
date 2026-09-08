@@ -1,5 +1,7 @@
 # InvoiceQR
 
+[![Build](https://github.com/JanHailfinger/invoiceQRCodeGeneratorMac/actions/workflows/build.yml/badge.svg)](https://github.com/JanHailfinger/invoiceQRCodeGeneratorMac/actions/workflows/build.yml)
+
 macOS-App, die Rechnungen per OpenAI ausliest und die Zahlungsdaten als **EPC069-12 / GiroCode**
 QR-Code anzeigt. Mit der Banking-App scannen statt IBAN und Betrag abzutippen.
 
