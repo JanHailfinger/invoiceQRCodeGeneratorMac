@@ -4,7 +4,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Macht "Zahlungs-QR erzeugen" im Finder-Kontextmenü unter "Dienste" verfügbar.
+        // Makes "Create Payment QR Code" show up under Services in the Finder context menu.
         NSApp.servicesProvider = self
         NSUpdateDynamicServices()
     }
@@ -13,12 +13,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         true
     }
 
-    /// "Öffnen mit" und Doppelklick.
+    /// Open With and double-click.
     func application(_ application: NSApplication, open urls: [URL]) {
         AppModel.shared.handle(urls: urls)
     }
 
-    /// Dienste-Eintrag aus Info.plist (`NSMessage` = createPaymentQR).
+    /// The Services entry from Info.plist (`NSMessage` = createPaymentQR).
     @objc func createPaymentQR(
         _ pasteboard: NSPasteboard,
         userData: String?,
@@ -28,7 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: options) as? [URL] ?? []
 
         guard !urls.isEmpty else {
-            error?.pointee = "Keine Datei übergeben." as NSString
+            error?.pointee = NSLocalizedString("No file was passed.", comment: "Service error") as NSString
             return
         }
         AppModel.shared.handle(urls: urls)

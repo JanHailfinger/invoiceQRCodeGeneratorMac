@@ -17,15 +17,15 @@ struct InvoiceQRApp: App {
         .defaultSize(width: 900, height: 640)
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("Rechnung öffnen …") { model.chooseFile() }
+                Button("Open Invoice…") { model.chooseFile() }
                     .keyboardShortcut("o")
             }
             CommandGroup(after: .newItem) {
-                Button("Zurücksetzen") { model.reset() }
+                Button("Reset") { model.reset() }
                     .keyboardShortcut("k")
                     .disabled(model.sourceURL == nil)
                 Divider()
-                Button("Erneut auslesen") { model.retry() }
+                Button("Read Again") { model.retry() }
                     .keyboardShortcut("r")
                     .disabled(model.sourceURL == nil || model.isBusy)
             }

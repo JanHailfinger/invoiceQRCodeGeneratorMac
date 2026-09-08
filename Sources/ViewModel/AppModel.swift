@@ -16,13 +16,13 @@ final class AppModel {
         case failed(String)
     }
 
-    // MARK: - Zustand
+    // MARK: - State
 
     var status: Status = .idle
     var sourceURL: URL?
     var extraction: InvoiceExtraction?
 
-    /// Bearbeitbare Felder – der QR-Code hängt live daran.
+    /// Editable fields - the QR code is derived from these, live.
     var beneficiaryName = ""
     var ibanText = ""
     var bicText = ""
@@ -50,12 +50,18 @@ final class AppModel {
         return false
     }
 
-    /// Warnungen des Modells plus Hinweis zur Zahlungsart und zu Fremdwährungen.
+    /// Model warnings plus notes about the payment mode and foreign currencies.
     var advisories: [String] {
         var result: [String] = []
         if let mode = extraction?.paymentMode.warning { result.append(mode) }
         if let currency = extraction?.currency?.uppercased(), !currency.isEmpty, currency != "EUR" {
-            result.append("Rechnung lautet auf \(currency). GiroCode überträgt ausschließlich EUR – Betrag prüfen.")
+            result.append(String(
+                format: NSLocalizedString(
+                    "The invoice is denominated in %@. A GiroCode carries EUR only, so check the amount.",
+                    comment: "Advisory"
+                ),
+                currency
+            ))
         }
         result.append(contentsOf: extraction?.warnings ?? [])
         return result
@@ -68,7 +74,7 @@ final class AppModel {
 
     private init() {}
 
-    // MARK: - Ablauf
+    // MARK: - Flow
 
     func canHandle(_ url: URL) -> Bool {
         guard let type = UTType(filenameExtension: url.pathExtension.lowercased()) else { return false }
@@ -78,7 +84,10 @@ final class AppModel {
     func handle(urls: [URL]) {
         guard let url = urls.first(where: canHandle) else {
             if let rejected = urls.first {
-                status = .failed("\(rejected.lastPathComponent) ist kein PDF und kein Bild.")
+                status = .failed(String(
+                    format: NSLocalizedString("%@ is neither a PDF nor an image.", comment: "Error"),
+                    rejected.lastPathComponent
+                ))
             }
             return
         }
@@ -96,11 +105,14 @@ final class AppModel {
         let settings = AppSettings.shared
         let model = settings.model
         let apiKey = settings.apiKey
+        let language = settings.warningLanguage
         let client = client
 
         currentTask = Task { [weak self] in
             do {
-                let result = try await client.extract(fileURL: url, model: model, apiKey: apiKey)
+                let result = try await client.extract(
+                    fileURL: url, model: model, apiKey: apiKey, warningLanguage: language
+                )
                 guard !Task.isCancelled else { return }
                 self?.apply(result)
             } catch {
@@ -128,13 +140,13 @@ final class AppModel {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = Self.supportedTypes
         panel.allowsMultipleSelection = false
-        panel.prompt = "Auslesen"
-        panel.message = "Rechnung als PDF oder Bild auswählen"
+        panel.prompt = NSLocalizedString("Read", comment: "Open panel button")
+        panel.message = NSLocalizedString("Choose an invoice as PDF or image", comment: "Open panel message")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         load(url)
     }
 
-    // MARK: - Ausgabe
+    // MARK: - Output
 
     func copyPayload() {
         let pasteboard = NSPasteboard.general
@@ -171,11 +183,11 @@ final class AppModel {
     private var suggestedFileName: String {
         let base = extraction?.invoiceNumber?.replacingOccurrences(of: "/", with: "-")
             ?? sourceURL?.deletingPathExtension().lastPathComponent
-            ?? "Zahlung"
+            ?? NSLocalizedString("Payment", comment: "Fallback file name")
         return "QR-\(base).png"
     }
 
-    // MARK: - Intern
+    // MARK: - Internals
 
     private func apply(_ result: InvoiceExtraction) {
         extraction = result
@@ -189,7 +201,7 @@ final class AppModel {
             amountText = ""
         }
 
-        // Strukturierte Referenz und Verwendungszweck schließen sich in EPC069-12 aus.
+        // EPC069-12 treats a structured reference and remittance text as mutually exclusive.
         let reference = result.creditorReference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if reference.uppercased().hasPrefix("RF") {
             referenceText = reference

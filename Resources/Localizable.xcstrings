@@ -1,0 +1,1095 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Open Invoice…": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechnung öffnen …"
+          }
+        }
+      }
+    },
+    "Reset": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zurücksetzen"
+          }
+        }
+      }
+    },
+    "Read Again": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut auslesen"
+          }
+        }
+      }
+    },
+    "Send the invoice to OpenAI again": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechnung erneut an OpenAI schicken"
+          }
+        }
+      }
+    },
+    "Clear the window": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fenster leeren"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen"
+          }
+        }
+      }
+    },
+    "Settings…": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen …"
+          }
+        }
+      }
+    },
+    "Model: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modell: %@"
+          }
+        }
+      }
+    },
+    "API key is missing": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-Key fehlt"
+          }
+        }
+      }
+    },
+    "Drop it": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loslassen"
+          }
+        }
+      }
+    },
+    "Invoice": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechnung"
+          }
+        }
+      }
+    },
+    "Choose an invoice (⌘O) or drag a PDF here": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechnung wählen (⌘O) oder PDF hierher ziehen"
+          }
+        }
+      }
+    },
+    "Drop an invoice": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechnung ablegen"
+          }
+        }
+      }
+    },
+    "Drag a PDF or image here or onto the toolbar, or right-click it in Finder and choose Services, then “Create Payment QR Code”.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF oder Bild hierher ziehen, oben in die Toolbar, oder im Finder per Rechtsklick → Dienste → „Zahlungs-QR erzeugen“."
+          }
+        }
+      }
+    },
+    "Choose Invoice…": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechnung auswählen …"
+          }
+        }
+      }
+    },
+    "No OpenAI API key stored.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es ist kein OpenAI-API-Key hinterlegt."
+          }
+        }
+      }
+    },
+    "Enter one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eintragen"
+          }
+        }
+      }
+    },
+    "Reading the invoice…": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechnung wird ausgelesen …"
+          }
+        }
+      }
+    },
+    "Reading failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auslesen fehlgeschlagen"
+          }
+        }
+      }
+    },
+    "Try Again": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
+          }
+        }
+      }
+    },
+    "Payee": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empfänger"
+          }
+        }
+      }
+    },
+    "Amount (EUR)": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betrag (EUR)"
+          }
+        }
+      }
+    },
+    "Remittance text": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verwendungszweck"
+          }
+        }
+      }
+    },
+    "Structured reference (ISO 11649)": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strukturierte Referenz (ISO 11649)"
+          }
+        }
+      }
+    },
+    "Purpose code": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purpose Code"
+          }
+        }
+      }
+    },
+    "Note to payee": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinweis an Empfänger"
+          }
+        }
+      }
+    },
+    "Payee name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empfängername"
+          }
+        }
+      }
+    },
+    "Reference": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Referenz"
+          }
+        }
+      }
+    },
+    "Optional, not needed for a SEPA IBAN.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional – bei SEPA-IBAN nicht nötig."
+          }
+        }
+      }
+    },
+    "Replaces the free-form remittance text.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ersetzt den freien Verwendungszweck."
+          }
+        }
+      }
+    },
+    "ISO 20022 code such as GDDS. Most banking apps ignore it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ISO-20022-Code, z. B. GDDS. Die meisten Banking-Apps ignorieren ihn."
+          }
+        }
+      }
+    },
+    "Non-SEPA country %@, please add a BIC.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht-SEPA-Land %@ – BIC ergänzen."
+          }
+        }
+      }
+    },
+    "Leave empty to let the banking app ask for the amount.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leer lassen, dann fragt die Banking-App den Betrag ab."
+          }
+        }
+      }
+    },
+    "In the QR code: EUR%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im QR-Code: EUR%@"
+          }
+        }
+      }
+    },
+    "Use free-form remittance text instead": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stattdessen freien Verwendungszweck nutzen"
+          }
+        }
+      }
+    },
+    "More EPC fields": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weitere EPC-Felder"
+          }
+        }
+      }
+    },
+    "From the document": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus dem Dokument"
+          }
+        }
+      }
+    },
+    "Invoice number": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechnungsnummer"
+          }
+        }
+      }
+    },
+    "Invoice date": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechnungsdatum"
+          }
+        }
+      }
+    },
+    "Due": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fällig am"
+          }
+        }
+      }
+    },
+    "Payment mode": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zahlungsart"
+          }
+        }
+      }
+    },
+    "Open original": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original öffnen"
+          }
+        }
+      }
+    },
+    "Show in Finder": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im Finder zeigen"
+          }
+        }
+      }
+    },
+    "Bank transfer": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überweisung"
+          }
+        }
+      }
+    },
+    "SEPA direct debit": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SEPA-Lastschrift"
+          }
+        }
+      }
+    },
+    "Already paid": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bereits bezahlt"
+          }
+        }
+      }
+    },
+    "Card or payment provider": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karte / Zahlungsdienstleister"
+          }
+        }
+      }
+    },
+    "Other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "andere"
+          }
+        }
+      }
+    },
+    "Not recognized": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nicht erkennbar"
+          }
+        }
+      }
+    },
+    "This invoice is collected by SEPA direct debit. Do not transfer on top of that.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechnung wird per SEPA-Lastschrift eingezogen – nicht zusätzlich überweisen."
+          }
+        }
+      }
+    },
+    "According to the document this invoice has already been paid.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechnung ist laut Dokument bereits bezahlt."
+          }
+        }
+      }
+    },
+    "According to the document payment runs through a card or payment provider.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zahlung läuft laut Dokument über Karte oder Zahlungsdienstleister."
+          }
+        }
+      }
+    },
+    "Scan with your banking app": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit der Banking-App scannen"
+          }
+        }
+      }
+    },
+    "%lld / %lld bytes": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld / %2$lld Byte"
+          }
+        }
+      }
+    },
+    "Copy QR Image": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR-Bild kopieren"
+          }
+        }
+      }
+    },
+    "Copy Payload": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutzdaten kopieren"
+          }
+        }
+      }
+    },
+    "Save as PNG…": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als PNG speichern …"
+          }
+        }
+      }
+    },
+    "Share": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilen"
+          }
+        }
+      }
+    },
+    "Payload (EPC069-12)": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutzdaten (EPC069-12)"
+          }
+        }
+      }
+    },
+    "SEPA payment QR code": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SEPA-Zahlungs-QR-Code"
+          }
+        }
+      }
+    },
+    "Fill in the required fields": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pflichtfelder ergänzen"
+          }
+        }
+      }
+    },
+    "Payee name is missing.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empfängername fehlt."
+          }
+        }
+      }
+    },
+    "IBAN is missing.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IBAN fehlt."
+          }
+        }
+      }
+    },
+    "IBAN is invalid, the checksum does not match.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IBAN ungültig – Prüfsumme stimmt nicht."
+          }
+        }
+      }
+    },
+    "BIC is invalid, expected 8 or 11 characters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BIC ungültig – 8 oder 11 Zeichen erwartet."
+          }
+        }
+      }
+    },
+    "IBAN is outside SEPA, most banks require a BIC.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IBAN außerhalb SEPA – die meisten Banken verlangen eine BIC."
+          }
+        }
+      }
+    },
+    "No amount set. Your banking app will ask for it when scanning.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Betrag – die Banking-App fragt ihn beim Scannen ab."
+          }
+        }
+      }
+    },
+    "Amount is outside 0.01 to 999,999,999.99 EUR.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betrag außerhalb 0,01 – 999.999.999,99 EUR."
+          }
+        }
+      }
+    },
+    "Structured reference and remittance text are mutually exclusive.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strukturierte Referenz und Verwendungszweck schließen sich aus."
+          }
+        }
+      }
+    },
+    "%1$@ was truncated to %2$ld characters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ auf %2$ld Zeichen gekürzt."
+          }
+        }
+      }
+    },
+    "QR payload is %1$ld bytes, the maximum is %2$ld.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR-Nutzdaten %1$ld Byte – Maximum ist %2$ld Byte."
+          }
+        }
+      }
+    },
+    "API key": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-Key"
+          }
+        }
+      }
+    },
+    "Stored in the keychain, not in the preferences.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird im Schlüsselbund gespeichert, nicht in den Einstellungen."
+          }
+        }
+      }
+    },
+    "Model": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modell"
+          }
+        }
+      }
+    },
+    "Load Models": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modelle laden"
+          }
+        }
+      }
+    },
+    "Available": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verfügbar"
+          }
+        }
+      }
+    },
+    "Fetching models…": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modelle werden abgerufen …"
+          }
+        }
+      }
+    },
+    "%lld models found.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Modelle gefunden."
+          }
+        }
+      }
+    },
+    "Suggestion: %@ for everyday use, a larger model for poor scans.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorschlag: %@ für den Alltag, ein größeres Modell bei schlechten Scans."
+          }
+        }
+      }
+    },
+    "QR code": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR-Code"
+          }
+        }
+      }
+    },
+    "Default note to payee": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinweis an Empfänger (Standard)"
+          }
+        }
+      }
+    },
+    "Copy the payload automatically after reading": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutzdaten nach dem Auslesen automatisch kopieren"
+          }
+        }
+      }
+    },
+    "“Create Payment QR Code” appears in the right-click menu under Services once the app has been launched from the Applications folder. If the entry is missing, restart Finder or run `pbs -flush`.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„Zahlungs-QR erzeugen“ erscheint im Rechtsklick-Menü unter „Dienste“, sobald die App einmal aus dem Programme-Ordner gestartet wurde. Fehlt der Eintrag, hilft ein Neustart des Finders oder `pbs -flush`."
+          }
+        }
+      }
+    },
+    "No OpenAI API key stored. Open Settings (⌘,) and enter one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein OpenAI-API-Key hinterlegt. Einstellungen öffnen (⌘,) und Key eintragen."
+          }
+        }
+      }
+    },
+    "Cannot read file: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datei nicht lesbar: %@"
+          }
+        }
+      }
+    },
+    "Unsupported file type: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dateityp wird nicht unterstützt: %@"
+          }
+        }
+      }
+    },
+    "File is %@, the limit is 30 MB.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datei ist %@ groß – Limit sind 30 MB."
+          }
+        }
+      }
+    },
+    "OpenAI error %1$ld: %2$@": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenAI-Fehler %1$ld: %2$@"
+          }
+        }
+      }
+    },
+    "Response was cut short: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antwort abgebrochen: %@"
+          }
+        }
+      }
+    },
+    "The response contained no JSON output.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antwort enthielt keine JSON-Ausgabe."
+          }
+        }
+      }
+    },
+    "Response could not be parsed: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antwort nicht auswertbar: %@"
+          }
+        }
+      }
+    },
+    "no details": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "keine Details"
+          }
+        }
+      }
+    },
+    "The model declined.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modell hat abgelehnt."
+          }
+        }
+      }
+    },
+    "The invoice is denominated in %@. A GiroCode carries EUR only, so check the amount.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechnung lautet auf %@. GiroCode überträgt ausschließlich EUR – Betrag prüfen."
+          }
+        }
+      }
+    },
+    "%@ is neither a PDF nor an image.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ist kein PDF und kein Bild."
+          }
+        }
+      }
+    },
+    "Read": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auslesen"
+          }
+        }
+      }
+    },
+    "Choose an invoice as PDF or image": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechnung als PDF oder Bild auswählen"
+          }
+        }
+      }
+    },
+    "Payment": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zahlung"
+          }
+        }
+      }
+    },
+    "No file was passed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Datei übergeben."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

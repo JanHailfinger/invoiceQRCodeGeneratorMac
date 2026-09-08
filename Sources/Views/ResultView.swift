@@ -2,8 +2,6 @@ import SwiftUI
 
 struct ResultView: View {
 
-    @Environment(AppModel.self) private var model
-
     var body: some View {
         HSplitView {
             PaymentFormView()
@@ -26,29 +24,32 @@ struct PaymentFormView: View {
                 }
 
                 Group {
-                    LabeledField(title: "Empfänger", text: Binding(
-                        get: { model.beneficiaryName },
-                        set: { model.beneficiaryName = $0 }
-                    ), limit: 70)
+                    LabeledField(
+                        title: NSLocalizedString("Payee", comment: "Field label"),
+                        text: Binding(get: { model.beneficiaryName }, set: { model.beneficiaryName = $0 }),
+                        limit: 70
+                    )
 
                     LabeledField(
-                        title: "IBAN",
+                        title: NSLocalizedString("IBAN", comment: "Field label"),
                         text: Binding(get: { model.ibanText }, set: { model.ibanText = $0 }),
                         monospaced: true,
-                        validity: validity(for: model.ibanText, isValid: IBAN.isValid, allowEmpty: true),
+                        validity: validity(for: model.ibanText, isValid: IBAN.isValid),
                         footnote: ibanFootnote
                     )
 
                     LabeledField(
-                        title: "BIC",
+                        title: NSLocalizedString("BIC", comment: "Field label"),
                         text: Binding(get: { model.bicText }, set: { model.bicText = $0.uppercased() }),
                         monospaced: true,
-                        validity: validity(for: model.bicText, isValid: BIC.isValid, allowEmpty: true),
-                        footnote: model.bicText.isEmpty ? "Optional – bei SEPA-IBAN nicht nötig." : nil
+                        validity: validity(for: model.bicText, isValid: BIC.isValid),
+                        footnote: model.bicText.isEmpty
+                            ? NSLocalizedString("Optional, not needed for a SEPA IBAN.", comment: "Field hint")
+                            : nil
                     )
 
                     LabeledField(
-                        title: "Betrag (EUR)",
+                        title: NSLocalizedString("Amount (EUR)", comment: "Field label"),
                         text: Binding(get: { model.amountText }, set: { model.amountText = $0 }),
                         monospaced: true,
                         validity: amountValidity,
@@ -60,37 +61,37 @@ struct PaymentFormView: View {
 
                 if model.referenceText.isEmpty {
                     LabeledField(
-                        title: "Verwendungszweck",
+                        title: NSLocalizedString("Remittance text", comment: "Field label"),
                         text: Binding(get: { model.remittanceText }, set: { model.remittanceText = $0 }),
                         limit: 140,
                         axis: .vertical
                     )
                 } else {
                     LabeledField(
-                        title: "Strukturierte Referenz (ISO 11649)",
+                        title: NSLocalizedString("Structured reference (ISO 11649)", comment: "Field label"),
                         text: Binding(get: { model.referenceText }, set: { model.referenceText = $0 }),
                         monospaced: true,
                         limit: 35,
-                        footnote: "Ersetzt den freien Verwendungszweck."
+                        footnote: NSLocalizedString("Replaces the free-form remittance text.", comment: "Field hint")
                     )
-                    Button("Stattdessen freien Verwendungszweck nutzen") {
+                    Button("Use free-form remittance text instead") {
                         model.remittanceText = model.referenceText
                         model.referenceText = ""
                     }
                     .buttonStyle(.link)
                 }
 
-                DisclosureGroup("Weitere EPC-Felder") {
+                DisclosureGroup("More EPC fields") {
                     VStack(alignment: .leading, spacing: 14) {
                         LabeledField(
-                            title: "Purpose Code",
+                            title: NSLocalizedString("Purpose code", comment: "Field label"),
                             text: Binding(get: { model.purposeCode }, set: { model.purposeCode = $0.uppercased() }),
                             monospaced: true,
                             limit: 4,
-                            footnote: "ISO-20022-Code, z. B. GDDS. Die meisten Banking-Apps ignorieren ihn."
+                            footnote: NSLocalizedString("ISO 20022 code such as GDDS. Most banking apps ignore it.", comment: "Field hint")
                         )
                         LabeledField(
-                            title: "Hinweis an Empfänger",
+                            title: NSLocalizedString("Note to payee", comment: "Field label"),
                             text: Binding(get: { model.beneficiaryHint }, set: { model.beneficiaryHint = $0 }),
                             limit: 70
                         )
@@ -109,7 +110,11 @@ struct PaymentFormView: View {
     private var ibanFootnote: String? {
         let iban = IBAN.normalized(model.ibanText)
         guard !iban.isEmpty, IBAN.isValid(iban) else { return nil }
-        return IBAN.isEEA(iban) ? nil : "Nicht-SEPA-Land \(IBAN.country(iban)) – BIC ergänzen."
+        guard !IBAN.isSEPA(iban) else { return nil }
+        return String(
+            format: NSLocalizedString("Non-SEPA country %@, please add a BIC.", comment: "Field hint"),
+            IBAN.country(iban)
+        )
     }
 
     private var amountValidity: Validity {
@@ -120,13 +125,18 @@ struct PaymentFormView: View {
 
     private var amountFootnote: String? {
         guard let amount = Amount.parse(model.amountText) else {
-            return model.amountText.isEmpty ? "Leer lassen, dann fragt die Banking-App den Betrag ab." : nil
+            return model.amountText.isEmpty
+                ? NSLocalizedString("Leave empty to let the banking app ask for the amount.", comment: "Field hint")
+                : nil
         }
-        return "Im QR-Code: EUR\(Amount.epcString(amount))"
+        return String(
+            format: NSLocalizedString("In the QR code: EUR%@", comment: "Field hint"),
+            Amount.epcString(amount)
+        )
     }
 
-    private func validity(for text: String, isValid: (String) -> Bool, allowEmpty: Bool) -> Validity {
-        if text.trimmingCharacters(in: .whitespaces).isEmpty { return allowEmpty ? .neutral : .invalid }
+    private func validity(for text: String, isValid: (String) -> Bool) -> Validity {
+        if text.trimmingCharacters(in: .whitespaces).isEmpty { return .neutral }
         return isValid(text) ? .valid : .invalid
     }
 }
@@ -212,20 +222,20 @@ struct InvoiceMetaView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Aus dem Dokument")
+            Text("From the document")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            row("Rechnungsnummer", extraction.invoiceNumber)
-            row("Rechnungsdatum", extraction.invoiceDate)
-            row("Fällig am", extraction.dueDate)
-            row("Zahlungsart", extraction.paymentMode.label)
+            row(NSLocalizedString("Invoice number", comment: "Meta row"), extraction.invoiceNumber)
+            row(NSLocalizedString("Invoice date", comment: "Meta row"), extraction.invoiceDate)
+            row(NSLocalizedString("Due", comment: "Meta row"), extraction.dueDate)
+            row(NSLocalizedString("Payment mode", comment: "Meta row"), extraction.paymentMode.label)
 
             if let url = model.sourceURL {
                 HStack(spacing: 12) {
-                    Button("Original öffnen") { model.openSource() }
+                    Button("Open original") { model.openSource() }
                         .buttonStyle(.link)
-                    Button("Im Finder zeigen") { model.revealSource() }
+                    Button("Show in Finder") { model.revealSource() }
                         .buttonStyle(.link)
                 }
                 .padding(.top, 2)

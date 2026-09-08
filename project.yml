@@ -20,6 +20,7 @@ settings:
     OTHER_CODE_SIGN_FLAGS: "--timestamp"
     ENABLE_USER_SCRIPT_SANDBOXING: "NO"
     GENERATE_INFOPLIST_FILE: "NO"
+    SWIFT_EMIT_LOC_STRINGS: "NO"
     INFOPLIST_FILE: Resources/Info.plist
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: ""
     DEAD_CODE_STRIPPING: "YES"
@@ -31,6 +32,8 @@ targets:
     platform: macOS
     sources:
       - path: Sources
+      - path: Resources/Localizable.xcstrings
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.rvm.InvoiceQR

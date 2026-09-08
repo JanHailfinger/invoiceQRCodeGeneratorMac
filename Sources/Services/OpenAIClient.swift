@@ -1,13 +1,13 @@
 import Foundation
 import UniformTypeIdentifiers
 
-/// Ruft die OpenAI Responses API mit der Rechnung als `input_file`/`input_image` auf.
-/// Bei PDFs zieht die API serverseitig Text **und** Seitenbilder – Scans funktionieren dadurch mit.
+/// Calls the OpenAI Responses API with the invoice as `input_file` / `input_image`.
+/// For PDFs the API extracts text *and* page images server side, so scans work without local OCR.
 struct OpenAIClient: Sendable {
 
     enum Failure: LocalizedError {
         case missingAPIKey
-        case unreadableFile(URL)
+        case unreadableFile(String)
         case unsupportedType(String)
         case fileTooLarge(bytes: Int)
         case http(status: Int, message: String)
@@ -18,21 +18,24 @@ struct OpenAIClient: Sendable {
         var errorDescription: String? {
             switch self {
             case .missingAPIKey:
-                "Kein OpenAI-API-Key hinterlegt. Einstellungen öffnen (⌘,) und Key eintragen."
-            case let .unreadableFile(url):
-                "Datei nicht lesbar: \(url.lastPathComponent)"
+                NSLocalizedString("No OpenAI API key stored. Open Settings (⌘,) and enter one.", comment: "Error")
+            case let .unreadableFile(name):
+                String(format: NSLocalizedString("Cannot read file: %@", comment: "Error"), name)
             case let .unsupportedType(type):
-                "Dateityp wird nicht unterstützt: \(type)"
+                String(format: NSLocalizedString("Unsupported file type: %@", comment: "Error"), type)
             case let .fileTooLarge(bytes):
-                "Datei ist \(ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)) groß – Limit sind 30 MB."
+                String(
+                    format: NSLocalizedString("File is %@, the limit is 30 MB.", comment: "Error"),
+                    ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
+                )
             case let .http(status, message):
-                "OpenAI-Fehler \(status): \(message)"
+                String(format: NSLocalizedString("OpenAI error %1$ld: %2$@", comment: "Error"), status, message)
             case let .incompleteResponse(reason):
-                "Antwort abgebrochen: \(reason)"
+                String(format: NSLocalizedString("Response was cut short: %@", comment: "Error"), reason)
             case .noStructuredOutput:
-                "Antwort enthielt keine JSON-Ausgabe."
+                NSLocalizedString("The response contained no JSON output.", comment: "Error")
             case let .decoding(message):
-                "Antwort nicht auswertbar: \(message)"
+                String(format: NSLocalizedString("Response could not be parsed: %@", comment: "Error"), message)
             }
         }
     }
@@ -45,13 +48,13 @@ struct OpenAIClient: Sendable {
         self.session = session
     }
 
-    // MARK: - Extraktion
+    // MARK: - Extraction
 
-    func extract(fileURL: URL, model: String, apiKey: String) async throws -> InvoiceExtraction {
+    func extract(fileURL: URL, model: String, apiKey: String, warningLanguage: String) async throws -> InvoiceExtraction {
         guard !apiKey.isEmpty else { throw Failure.missingAPIKey }
 
         guard let data = try? Data(contentsOf: fileURL, options: .mappedIfSafe) else {
-            throw Failure.unreadableFile(fileURL)
+            throw Failure.unreadableFile(fileURL.lastPathComponent)
         }
         guard data.count <= Self.maximumFileBytes else { throw Failure.fileTooLarge(bytes: data.count) }
 
@@ -59,10 +62,10 @@ struct OpenAIClient: Sendable {
         let body: [String: Any] = [
             "model": model,
             "input": [
-                ["role": "system", "content": InvoiceExtraction.systemPrompt],
+                ["role": "system", "content": InvoiceExtraction.systemPrompt(warningLanguage: warningLanguage)],
                 ["role": "user", "content": [
                     contentItem,
-                    ["type": "input_text", "text": "Extrahiere die Zahlungsdaten aus dieser Rechnung."],
+                    ["type": "input_text", "text": "Extract the payment details from this invoice."],
                 ]],
             ],
             "text": [
@@ -85,7 +88,7 @@ struct OpenAIClient: Sendable {
         }
     }
 
-    /// Modelliste des Accounts – füllt den Picker in den Einstellungen.
+    /// The account's model list, used to fill the picker in Settings.
     func availableModels(apiKey: String) async throws -> [String] {
         guard !apiKey.isEmpty else { throw Failure.missingAPIKey }
         let json = try await get(path: "models", apiKey: apiKey)
@@ -124,13 +127,13 @@ struct OpenAIClient: Sendable {
         guard (200..<300).contains(status) else {
             let message = (json["error"] as? [String: Any])?["message"] as? String
                 ?? String(data: data, encoding: .utf8)
-                ?? "keine Details"
+                ?? NSLocalizedString("no details", comment: "Error detail fallback")
             throw Failure.http(status: status, message: message)
         }
         return json
     }
 
-    // MARK: - Payload-Bau
+    // MARK: - Request payload
 
     private static func inputItem(for url: URL, data: Data) throws -> [String: Any] {
         let type = UTType(filenameExtension: url.pathExtension.lowercased())
@@ -156,7 +159,8 @@ struct OpenAIClient: Sendable {
         throw Failure.unsupportedType(type?.identifier ?? url.pathExtension)
     }
 
-    /// Responses API liefert `output` als Array; die JSON-Ausgabe steckt im Message-Item als `output_text`.
+    /// The Responses API returns `output` as an array; the JSON sits in the message item
+    /// as an `output_text` part. There is no top-level `output_text` field in the raw API.
     private static func structuredOutput(from json: [String: Any]) throws -> String {
         if let status = json["status"] as? String, status != "completed" {
             let reason = (json["incomplete_details"] as? [String: Any])?["reason"] as? String ?? status
@@ -169,9 +173,12 @@ struct OpenAIClient: Sendable {
             for part in content where part["type"] as? String == "output_text" {
                 if let text = part["text"] as? String, !text.isEmpty { return text }
             }
-            // Refusal statt Ausgabe – mit Begründung weitermelden.
+            // A refusal replaces the output; pass its reason through.
             for part in content where part["type"] as? String == "refusal" {
-                throw Failure.incompleteResponse(part["refusal"] as? String ?? "Modell hat abgelehnt.")
+                throw Failure.incompleteResponse(
+                    part["refusal"] as? String
+                        ?? NSLocalizedString("The model declined.", comment: "Error")
+                )
             }
         }
         throw Failure.noStructuredOutput

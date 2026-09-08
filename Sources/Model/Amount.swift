@@ -1,14 +1,14 @@
 import Foundation
 
-/// Betrags-Parsing für gemischte Schreibweisen ("1.234,56", "1,234.56", "1234.5", "EUR 89,00").
+/// Amount parsing for mixed notations ("1.234,56", "1,234.56", "1234.5", "EUR 89.00").
 enum Amount {
 
     static func parse(_ raw: String?) -> Decimal? {
         guard let raw, !raw.isEmpty else { return nil }
 
-        // Alles außer Ziffern, Trennzeichen und Minus entfernen (Währungszeichen, NBSP, "EUR" …).
+        // Drop everything but digits, separators and the minus sign (currency symbols, NBSP, "EUR" ...).
         var cleaned = raw.filter { $0.isNumber || $0 == "," || $0 == "." || $0 == "-" || $0 == "'" }
-        cleaned = cleaned.replacingOccurrences(of: "'", with: "") // CH-Tausendertrennung
+        cleaned = cleaned.replacingOccurrences(of: "'", with: "") // Swiss grouping
         guard !cleaned.isEmpty else { return nil }
 
         let negative = cleaned.hasPrefix("-")
@@ -20,7 +20,7 @@ enum Amount {
         var normalized: String
         switch (lastComma, lastDot) {
         case let (comma?, dot?):
-            // Das hintere Zeichen ist das Dezimaltrennzeichen, das andere Tausendertrennung.
+            // Whichever comes last is the decimal separator, the other one is grouping.
             let decimalSeparator: Character = comma > dot ? "," : "."
             normalized = cleaned.filter { $0.isNumber || $0 == decimalSeparator }
             normalized = normalized.replacingOccurrences(of: String(decimalSeparator), with: ".")
@@ -36,8 +36,8 @@ enum Amount {
         return negative ? -value : value
     }
 
-    /// Ein einzelnes Trennzeichen ist Tausendertrennung, wenn genau drei Ziffern folgen
-    /// und links davon 1–3 Ziffern stehen ("1.234"), sonst Dezimaltrennzeichen ("1234.5").
+    /// A lone separator means grouping when exactly three digits follow and one to three
+    /// digits lead ("1.234"), otherwise it is the decimal separator ("1234.5").
     private static func decideSingleSeparator(_ text: String, separator: Character, at index: String.Index) -> String {
         let fractionDigits = text.distance(from: text.index(after: index), to: text.endIndex)
         let integerDigits = text.distance(from: text.startIndex, to: index)
@@ -47,18 +47,18 @@ enum Amount {
             : text.filter { $0.isNumber || $0 == separator }.replacingOccurrences(of: String(separator), with: ".")
     }
 
-    /// EPC-Feld 8: exakt zwei Dezimalstellen, Punkt als Trennzeichen, keine Gruppierung.
+    /// EPC field 8: exactly two decimals, dot separator, no grouping.
     static func epcString(_ value: Decimal) -> String {
         let rounded = NSDecimalNumber(decimal: value).rounding(accordingToBehavior: roundingBehavior)
-        return Self.formatter.string(from: rounded) ?? "0.00"
+        return Self.epcFormatter.string(from: rounded) ?? "0.00"
     }
 
-    /// Deutsche Anzeige im Formular.
+    /// Localized display inside the form.
     static func display(_ value: Decimal) -> String {
         Self.displayFormatter.string(from: NSDecimalNumber(decimal: value)) ?? ""
     }
 
-    /// EPC069-12 erlaubt 0,01 – 999.999.999,99 EUR.
+    /// EPC069-12 allows 0.01 to 999,999,999.99 EUR.
     static let minimum = Decimal(string: "0.01")!
     static let maximum = Decimal(string: "999999999.99")!
 
@@ -67,7 +67,7 @@ enum Amount {
         raiseOnExactness: false, raiseOnOverflow: false, raiseOnUnderflow: false, raiseOnDivideByZero: false
     )
 
-    private static let formatter: NumberFormatter = {
+    private static let epcFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.numberStyle = .decimal
@@ -79,7 +79,6 @@ enum Amount {
 
     private static let displayFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "de_DE")
         formatter.numberStyle = .decimal
         formatter.usesGroupingSeparator = true
         formatter.minimumFractionDigits = 2

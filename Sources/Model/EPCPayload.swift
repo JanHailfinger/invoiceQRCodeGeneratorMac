@@ -1,22 +1,22 @@
 import Foundation
 
-/// EPC069-12 ("GiroCode") – SEPA Credit Transfer als QR-Nutzdaten.
+/// EPC069-12 ("GiroCode") - SEPA credit transfer as QR payload.
 ///
-/// Feldreihenfolge, jede Zeile per LF getrennt:
-///  1 Service Tag        "BCD"
-///  2 Version            "002" (BIC optional) / "001" (BIC verpflichtend)
-///  3 Zeichensatz        "1" = UTF-8
-///  4 Identification     "SCT"
-///  5 BIC                max 11
-///  6 Empfängername      max 70
-///  7 IBAN               max 34
-///  8 Betrag             "EUR" + 0.01…999999999.99
-///  9 Purpose Code       max 4
-/// 10 Referenz strukturiert    max 35   \
-/// 11 Verwendungszweck         max 140  / nur eines von beiden
-/// 12 Hinweis an Empfänger     max 70
+/// Field order, one per line, separated by LF:
+///  1 Service tag         "BCD"
+///  2 Version             "002" (BIC optional) / "001" (BIC required)
+///  3 Character set       "1" = UTF-8
+///  4 Identification      "SCT"
+///  5 BIC                 max 11
+///  6 Beneficiary name    max 70
+///  7 IBAN                max 34
+///  8 Amount              "EUR" + 0.01 ... 999999999.99
+///  9 Purpose code        max 4
+/// 10 Structured reference    max 35   \
+/// 11 Unstructured remittance max 140  / only one of the two
+/// 12 Beneficiary to originator information  max 70
 ///
-/// Gesamtlänge maximal 331 Byte.
+/// Total payload must stay within 331 bytes.
 struct EPCPayload {
 
     static let maximumByteCount = 331
@@ -37,7 +37,7 @@ struct EPCPayload {
         case missingIBAN
         case invalidIBAN
         case invalidBIC
-        case missingBICOutsideEEA
+        case missingBICOutsideSEPA
         case missingAmount
         case amountOutOfRange
         case bothReferenceKinds
@@ -46,30 +46,55 @@ struct EPCPayload {
 
         var id: Self { self }
 
+        /// Blocking issues suppress the QR code; the rest are advisory.
         var isBlocking: Bool {
             switch self {
             case .missingName, .missingIBAN, .invalidIBAN, .invalidBIC,
                  .amountOutOfRange, .bothReferenceKinds, .tooLong:
                 true
-            case .missingBICOutsideEEA, .missingAmount, .truncated:
+            case .missingBICOutsideSEPA, .missingAmount, .truncated:
                 false
             }
         }
 
         var text: String {
             switch self {
-            case .missingName: "Empfängername fehlt."
-            case .missingIBAN: "IBAN fehlt."
-            case .invalidIBAN: "IBAN ungültig (Prüfsumme stimmt nicht)."
-            case .invalidBIC: "BIC ungültig – 8 oder 11 Zeichen erwartet."
-            case .missingBICOutsideEEA: "IBAN außerhalb SEPA/EWR: BIC wird von vielen Banken verlangt."
-            case .missingAmount: "Kein Betrag – die Banking-App fragt ihn beim Scannen ab."
-            case .amountOutOfRange: "Betrag außerhalb 0,01 – 999.999.999,99 EUR."
-            case .bothReferenceKinds: "Strukturierte Referenz und Verwendungszweck schließen sich aus."
-            case let .truncated(field, limit): "\(field) auf \(limit) Zeichen gekürzt."
-            case let .tooLong(bytes): "QR-Nutzdaten \(bytes) Byte – Maximum ist \(maximumByteCount) Byte."
+            case .missingName:
+                NSLocalizedString("Payee name is missing.", comment: "EPC validation")
+            case .missingIBAN:
+                NSLocalizedString("IBAN is missing.", comment: "EPC validation")
+            case .invalidIBAN:
+                NSLocalizedString("IBAN is invalid, the checksum does not match.", comment: "EPC validation")
+            case .invalidBIC:
+                NSLocalizedString("BIC is invalid, expected 8 or 11 characters.", comment: "EPC validation")
+            case .missingBICOutsideSEPA:
+                NSLocalizedString("IBAN is outside SEPA, most banks require a BIC.", comment: "EPC validation")
+            case .missingAmount:
+                NSLocalizedString("No amount set. Your banking app will ask for it when scanning.", comment: "EPC validation")
+            case .amountOutOfRange:
+                NSLocalizedString("Amount is outside 0.01 to 999,999,999.99 EUR.", comment: "EPC validation")
+            case .bothReferenceKinds:
+                NSLocalizedString("Structured reference and remittance text are mutually exclusive.", comment: "EPC validation")
+            case let .truncated(field, limit):
+                String(
+                    format: NSLocalizedString("%1$@ was truncated to %2$ld characters.", comment: "EPC validation"),
+                    field, limit
+                )
+            case let .tooLong(bytes):
+                String(
+                    format: NSLocalizedString("QR payload is %1$ld bytes, the maximum is %2$ld.", comment: "EPC validation"),
+                    bytes, EPCPayload.maximumByteCount
+                )
             }
         }
+    }
+
+    /// Field names as they appear in truncation messages.
+    enum FieldName {
+        static let name = NSLocalizedString("Payee name", comment: "EPC field")
+        static let reference = NSLocalizedString("Reference", comment: "EPC field")
+        static let remittance = NSLocalizedString("Remittance text", comment: "EPC field")
+        static let hint = NSLocalizedString("Note to payee", comment: "EPC field")
     }
 
     let text: String
@@ -81,13 +106,13 @@ struct EPCPayload {
     init(_ fields: Fields) {
         var issues: [Issue] = []
 
-        let name = Self.clamp(fields.beneficiaryName, limit: 70, field: "Empfängername", issues: &issues)
+        let name = Self.clamp(fields.beneficiaryName, limit: 70, field: FieldName.name, issues: &issues)
         let iban = IBAN.normalized(fields.iban)
         let bic = BIC.normalized(fields.bic)
         let purpose = String(Self.sanitize(fields.purposeCode).uppercased().prefix(4))
-        let structured = Self.clamp(fields.structuredReference, limit: 35, field: "Referenz", issues: &issues)
-        let unstructured = Self.clamp(fields.unstructuredRemittance, limit: 140, field: "Verwendungszweck", issues: &issues)
-        let hint = Self.clamp(fields.beneficiaryToOriginator, limit: 70, field: "Empfängerhinweis", issues: &issues)
+        let structured = Self.clamp(fields.structuredReference, limit: 35, field: FieldName.reference, issues: &issues)
+        let unstructured = Self.clamp(fields.unstructuredRemittance, limit: 140, field: FieldName.remittance, issues: &issues)
+        let hint = Self.clamp(fields.beneficiaryToOriginator, limit: 70, field: FieldName.hint, issues: &issues)
 
         if name.isEmpty { issues.append(.missingName) }
         if iban.isEmpty {
@@ -96,7 +121,7 @@ struct EPCPayload {
             issues.append(.invalidIBAN)
         }
         if !bic.isEmpty, !BIC.isValid(bic) { issues.append(.invalidBIC) }
-        if bic.isEmpty, !iban.isEmpty, IBAN.isValid(iban), !IBAN.isEEA(iban) { issues.append(.missingBICOutsideEEA) }
+        if bic.isEmpty, !iban.isEmpty, IBAN.isValid(iban), !IBAN.isSEPA(iban) { issues.append(.missingBICOutsideSEPA) }
         if !structured.isEmpty, !unstructured.isEmpty { issues.append(.bothReferenceKinds) }
 
         var amountLine = ""
@@ -110,7 +135,7 @@ struct EPCPayload {
             issues.append(.missingAmount)
         }
 
-        // Version 002 erlaubt eine leere BIC-Zeile.
+        // Version 002 permits an empty BIC line.
         let lines = [
             "BCD",
             "002",
@@ -126,7 +151,7 @@ struct EPCPayload {
             hint,
         ]
 
-        // Leere Felder am Ende dürfen entfallen – hält die Nutzdaten kurz.
+        // Trailing empty fields may be omitted, which keeps the payload short.
         var trimmed = lines
         while let last = trimmed.last, last.isEmpty, trimmed.count > 7 {
             trimmed.removeLast()
@@ -141,7 +166,7 @@ struct EPCPayload {
         self.issues = issues
     }
 
-    /// Steuerzeichen und Zeilenumbrüche raus – sonst zerschießen sie die Feldstruktur.
+    /// Strip control characters and line breaks - they would break the field structure.
     private static func sanitize(_ value: String) -> String {
         let collapsed = value.unicodeScalars
             .map { CharacterSet.controlCharacters.contains($0) || CharacterSet.newlines.contains($0) ? " " : Character($0) }

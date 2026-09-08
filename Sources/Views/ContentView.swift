@@ -12,7 +12,7 @@ struct ContentView: View {
             .toolbar { toolbarContent }
             .navigationTitle("InvoiceQR")
             .navigationSubtitle(model.sourceURL?.lastPathComponent ?? "")
-            // Ganzes Fenster als Ablagefläche.
+            // The whole window accepts drops.
             .dropDestination(for: URL.self) { urls, _ in
                 model.handle(urls: urls)
                 return true
@@ -52,28 +52,30 @@ struct ContentView: View {
                 Button {
                     model.retry()
                 } label: {
-                    Label("Erneut auslesen", systemImage: "arrow.clockwise")
+                    Label("Read Again", systemImage: "arrow.clockwise")
                 }
                 .disabled(model.isBusy)
-                .help("Rechnung erneut an OpenAI schicken")
+                .help("Send the invoice to OpenAI again")
 
                 Button {
                     model.reset()
                 } label: {
-                    Label("Zurücksetzen", systemImage: "xmark.circle")
+                    Label("Reset", systemImage: "xmark.circle")
                 }
-                .help("Fenster leeren")
+                .help("Clear the window")
             }
 
             SettingsLink {
-                Label("Einstellungen", systemImage: "gearshape")
+                Label("Settings", systemImage: "gearshape")
             }
-            .help(settings.hasAPIKey ? "Modell: \(settings.model)" : "API-Key fehlt")
+            .help(settings.hasAPIKey
+                  ? String(format: NSLocalizedString("Model: %@", comment: "Tooltip"), settings.model)
+                  : NSLocalizedString("API key is missing", comment: "Tooltip"))
         }
     }
 }
 
-/// Ablagefläche in der Toolbar – nimmt Dateien direkt oben entgegen.
+/// Drop area in the toolbar, so files can be dropped at the top of the window.
 private struct ToolbarDropButton: View {
 
     @Environment(AppModel.self) private var model
@@ -85,7 +87,7 @@ private struct ToolbarDropButton: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: isTargeted ? "arrow.down.doc.fill" : "doc.badge.plus")
-                Text(isTargeted ? "Loslassen" : "Rechnung")
+                Text(isTargeted ? "Drop it" : "Invoice")
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
@@ -94,7 +96,7 @@ private struct ToolbarDropButton: View {
                     .fill(Color.accentColor.opacity(isTargeted ? 0.25 : 0))
             }
         }
-        .help("Rechnung wählen (⌘O) oder PDF hierher ziehen")
+        .help("Choose an invoice (⌘O) or drag a PDF here")
         .dropDestination(for: URL.self) { urls, _ in
             model.handle(urls: urls)
             return true
@@ -112,11 +114,11 @@ private struct ExtractingView: View {
         VStack(spacing: 16) {
             ProgressView()
                 .controlSize(.large)
-            Text("Rechnung wird ausgelesen …")
+            Text("Reading the invoice…")
                 .font(.title3)
             Text(fileName)
                 .foregroundStyle(.secondary)
-            Text("Modell: \(settings.model)")
+            Text("Model: \(settings.model)")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
@@ -135,7 +137,7 @@ private struct FailureView: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 42))
                 .foregroundStyle(.orange)
-            Text("Auslesen fehlgeschlagen")
+            Text("Reading failed")
                 .font(.title3)
             Text(message)
                 .multilineTextAlignment(.center)
@@ -144,10 +146,10 @@ private struct FailureView: View {
                 .frame(maxWidth: 460)
 
             HStack {
-                Button("Erneut versuchen") { model.retry() }
+                Button("Try Again") { model.retry() }
                     .disabled(model.sourceURL == nil)
-                SettingsLink { Text("Einstellungen …") }
-                Button("Zurücksetzen") { model.reset() }
+                SettingsLink { Text("Settings…") }
+                Button("Reset") { model.reset() }
             }
             .padding(.top, 4)
         }

@@ -12,41 +12,44 @@ concurrency:
 
 jobs:
   build:
-    name: Bauen und prüfen
+    name: Build and check
     runs-on: macos-15
 
     steps:
       - uses: actions/checkout@v5
 
-      - name: Toolchain melden
+      - name: Report toolchain
         run: |
           xcodebuild -version
           swift --version
 
-      - name: xcodegen installieren
+      - name: Install xcodegen
         run: brew install xcodegen
 
-      - name: Logikprüfungen
+      - name: Logic checks
         run: ./build.sh check
 
-      - name: App bauen
+      - name: Build app
         run: ./build.sh build
 
-      - name: Finder-Dienst im Bundle prüfen
+      - name: Verify Finder service and localizations
         run: |
           PLIST=.build/Build/Products/Release/InvoiceQR.app/Contents/Info.plist
+          RESOURCES=.build/Build/Products/Release/InvoiceQR.app/Contents/Resources
           plutil -lint "$PLIST"
           plutil -extract NSServices.0.NSMessage raw -o - "$PLIST" | grep -qx createPaymentQR
           plutil -extract CFBundleDocumentTypes.0.LSItemContentTypes.0 raw -o - "$PLIST" | grep -qx com.adobe.pdf
-          echo "NSServices und Dokumenttypen sind im Bundle."
+          test -f "$RESOURCES/en.lproj/Localizable.strings"
+          test -f "$RESOURCES/de.lproj/Localizable.strings"
+          echo "Service, document types and both localizations are in the bundle."
 
-      - name: App-Bundle verpacken
+      - name: Package app bundle
         run: |
           ditto -c -k --sequesterRsrc --keepParent \
             .build/Build/Products/Release/InvoiceQR.app \
             InvoiceQR.app.zip
 
-      - name: App-Bundle als Artefakt ablegen
+      - name: Upload app bundle
         uses: actions/upload-artifact@v4
         with:
           name: InvoiceQR-app

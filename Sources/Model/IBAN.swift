@@ -1,16 +1,16 @@
 import Foundation
 
-/// IBAN-Hilfen: Normalisierung, ISO 7064 Mod-97-10 Prüfung, Anzeigeformat.
+/// IBAN helpers: normalization, ISO 7064 mod-97-10 validation, display format.
 enum IBAN {
 
-    /// Nur Buchstaben/Ziffern, groß.
+    /// Alphanumerics only, uppercased.
     static func normalized(_ raw: String) -> String {
         raw.uppercased().unicodeScalars
             .filter { CharacterSet.alphanumerics.contains($0) }
             .reduce(into: "") { $0.unicodeScalars.append($1) }
     }
 
-    /// Mod-97-10 laut ISO 13616 / ISO 7064.
+    /// Mod-97-10 per ISO 13616 / ISO 7064.
     static func isValid(_ raw: String) -> Bool {
         let iban = normalized(raw)
         guard (15...34).contains(iban.count) else { return false }
@@ -20,7 +20,7 @@ enum IBAN {
         guard country.allSatisfy(\.isLetter), checkDigits.allSatisfy(\.isNumber) else { return false }
         guard expectedLength(forCountry: String(country)).map({ $0 == iban.count }) ?? true else { return false }
 
-        // Erste vier Zeichen ans Ende, Buchstaben -> A=10 ... Z=35, stückweise mod 97.
+        // Move the first four characters to the end, map letters A=10 ... Z=35, then reduce mod 97.
         var remainder = 0
         for character in iban.dropFirst(4) + iban.prefix(4) {
             if character.isNumber, let digit = character.wholeNumberValue {
@@ -34,7 +34,7 @@ enum IBAN {
         return remainder == 1
     }
 
-    /// Vierergruppen für die Anzeige.
+    /// Groups of four for display.
     static func display(_ raw: String) -> String {
         let iban = normalized(raw)
         return stride(from: 0, to: iban.count, by: 4).map { offset in
@@ -48,19 +48,19 @@ enum IBAN {
         String(normalized(raw).prefix(2))
     }
 
-    /// EPC-Version 002 macht die BIC optional – außerhalb des EWR fordern Banken sie aber weiter an.
-    static func isEEA(_ raw: String) -> Bool {
-        eeaCountries.contains(country(raw))
+    /// EPC version 002 makes the BIC optional, but banks still want it outside SEPA.
+    static func isSEPA(_ raw: String) -> Bool {
+        sepaCountries.contains(country(raw))
     }
 
-    private static let eeaCountries: Set<String> = [
+    private static let sepaCountries: Set<String> = [
         "AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE",
         "IS", "IT", "LI", "LT", "LU", "LV", "MT", "NL", "NO", "PL", "PT", "RO", "SE", "SI", "SK",
-        // SEPA-Teilnehmer außerhalb des EWR, für die keine BIC nötig ist
+        // SEPA participants outside the EEA that also need no BIC
         "CH", "GB", "MC", "SM", "VA", "AD", "GI",
     ]
 
-    /// Länge je Land, soweit bekannt – fängt Tippfehler ab, die Mod-97 überlebt.
+    /// Length per country where known - catches typos that survive mod-97.
     private static func expectedLength(forCountry code: String) -> Int? {
         lengths[code]
     }
@@ -78,7 +78,7 @@ enum IBAN {
     ]
 }
 
-/// BIC-Format nach ISO 9362: 8 oder 11 alphanumerische Zeichen.
+/// BIC format per ISO 9362: 8 or 11 alphanumeric characters.
 enum BIC {
     static func normalized(_ raw: String) -> String {
         raw.uppercased().unicodeScalars
@@ -89,8 +89,8 @@ enum BIC {
     static func isValid(_ raw: String) -> Bool {
         let bic = normalized(raw)
         guard bic.count == 8 || bic.count == 11 else { return false }
-        guard bic.prefix(4).allSatisfy(\.isLetter) else { return false }          // Bankcode
-        guard bic.dropFirst(4).prefix(2).allSatisfy(\.isLetter) else { return false } // Ländercode
+        guard bic.prefix(4).allSatisfy(\.isLetter) else { return false }             // bank code
+        guard bic.dropFirst(4).prefix(2).allSatisfy(\.isLetter) else { return false } // country code
         return true
     }
 }

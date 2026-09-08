@@ -2,3 +2,8 @@
 InvoiceQR.xcodeproj/
 *.xcuserstate
 .DS_Store
+InvoiceQR-*.dmg
+InvoiceQR-*.pkg
+InvoiceQR-*.zip
+SHA256SUMS.txt
+notes.md

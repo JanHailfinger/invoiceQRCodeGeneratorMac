@@ -2,151 +2,152 @@
 
 [![Build](https://github.com/JanHailfinger/invoiceQRCodeGeneratorMac/actions/workflows/build.yml/badge.svg)](https://github.com/JanHailfinger/invoiceQRCodeGeneratorMac/actions/workflows/build.yml)
 
-macOS-App, die Rechnungen per OpenAI ausliest und die Zahlungsdaten als **EPC069-12 / GiroCode**
-QR-Code anzeigt. Mit der Banking-App scannen statt IBAN und Betrag abzutippen.
+macOS app that reads invoices with OpenAI and shows the payment details as an
+**EPC069-12 / GiroCode** QR code. Scan it with your banking app instead of typing IBAN and amount.
 
-## Herunterladen
+The interface is available in English and German and follows the system language.
 
-Fertige App: **[Releases](https://github.com/JanHailfinger/invoiceQRCodeGeneratorMac/releases/latest)**
+## Download
 
-- `InvoiceQR-x.y.z.dmg` — öffnen, App nach „Programme" ziehen.
-- `InvoiceQR-x.y.z.pkg` — Doppelklick, Installer legt die App nach `/Programme`. Der Weg, wenn der
-  Finder-Dienst sofort greifen soll, weil macOS Dienste nur aus `/Programme` und
-  `~/Programme` anbietet.
+Ready-built app: **[Releases](https://github.com/JanHailfinger/invoiceQRCodeGeneratorMac/releases/latest)**
 
-Ob ein Build signiert ist, stehen die Release-Notes dazu. Ist er nur ad-hoc signiert, verlangt
-Gatekeeper beim **ersten Start** Rechtsklick auf die App → „Öffnen“ → im Dialog nochmal „Öffnen“.
-Bei „beschädigt und kann nicht geöffnet werden“:
+- `InvoiceQR-x.y.z.dmg` — open it, drag the app to Applications.
+- `InvoiceQR-x.y.z.pkg` — double-click, the installer puts the app in `/Applications`. Take this
+  one if you want the Finder service to work immediately, because macOS only offers services for
+  apps in `/Applications` and `~/Applications`.
+
+The release notes say whether a build is notarized. If it is only ad-hoc signed, Gatekeeper
+requires right-click → Open on **first launch**. If macOS claims the app is damaged:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/InvoiceQR.app
 ```
 
-## Bauen
+## Build
 
 ```bash
-./build.sh run       # baut (Release) und startet
-./build.sh install   # nach /Applications, registriert den Finder-Dienst
-./build.sh check     # Prüfungen für IBAN, Betragsparser und EPC-Nutzdaten
+./build.sh run       # build (release) and launch
+./build.sh install   # copy to /Applications, register the Finder service
+./build.sh dist      # sign, notarize, package as DMG and PKG
+./build.sh check     # checks for IBAN, amount parser and EPC payload
 ./build.sh clean
 ```
 
-Voraussetzungen: Xcode und `xcodegen` (`brew install xcodegen`). Das Xcode-Projekt wird aus
-`project.yml` generiert und ist nicht eingecheckt.
+Requires Xcode and `xcodegen` (`brew install xcodegen`). The Xcode project is generated from
+`project.yml` and is not checked in.
 
-## Signieren und notarisieren
+## Signing and notarization
 
-Ohne Developer-ID-Zertifikat baut alles ad-hoc signiert – lokal völlig ausreichend, für die
-Weitergabe nicht. Mit Zertifikat:
+Without a Developer ID certificate everything builds ad-hoc signed, which is fine locally but not
+for distribution. With a certificate:
 
 ```bash
-export APPLE_TEAM_ID=XXXXXXXXXX          # 10 Zeichen, developer.apple.com/account
-export NOTARY_PROFILE=notarytool         # oder ASC_KEY_ID/ASC_ISSUER_ID/ASC_KEY_PATH
+export NOTARY_PROFILE=notarytool         # or ASC_KEY_ID/ASC_ISSUER_ID/ASC_KEY_PATH
 VERSION=1.0.0 ./build.sh dist
 ```
 
-`dist` signiert mit dem ersten „Developer ID Application“-Zertifikat aus dem Schlüsselbund
-(oder `SIGN_IDENTITY`), reicht zur Notarisierung ein, wartet, staplet das Ticket ins Bundle und
-prüft am Ende mit `codesign --verify` und `spctl`. Ohne Notarisierungs-Zugang bleibt es beim
-signierten, nicht notarisierten Bundle und sagt das auch.
+`dist` signs with the first "Developer ID Application" certificate in the keychain (or
+`SIGN_IDENTITY`), derives the team ID from it, notarizes the app, staples the ticket, then builds
+DMG and PKG from the stapled app and notarizes those too. Without notarization credentials it
+stops at the signed bundle and says so.
 
-Zugangsdaten einmalig hinterlegen, dann genügt `NOTARY_PROFILE`:
+Store the credentials once, then `NOTARY_PROFILE` is enough:
 
 ```bash
 xcrun notarytool store-credentials notarytool \
-  --apple-id DEINE@apple-id.de --team-id XXXXXXXXXX --password APP-SPEZIFISCHES-PASSWORT
+  --apple-id YOUR@apple-id.com --team-id XXXXXXXXXX --password APP-SPECIFIC-PASSWORD
 ```
 
-### In der CI
+### In CI
 
-Der Release-Workflow signiert und notarisiert, sobald diese Repository-Secrets liegen. Fehlen sie,
-läuft der Release ad-hoc signiert weiter und schreibt eine Warnung ins Log.
+The release workflow signs and notarizes as soon as these repository secrets exist. Without them
+the release still ships, ad-hoc signed, and logs a warning.
 
-| Secret | Inhalt |
+| Secret | Content |
 |---|---|
-| `MACOS_CERTIFICATE_P12` | Developer-ID-Zertifikat als `.p12`, base64 (`base64 -i cert.p12 \| pbcopy`) |
-| `MACOS_CERTIFICATE_PASSWORD` | Passwort des `.p12` |
-| `MACOS_SIGN_IDENTITY` | optional, z. B. `Developer ID Application: Name (TEAMID)` |
+| `MACOS_CERTIFICATE_P12` | Developer ID certificate as `.p12`, base64 (`base64 -i cert.p12 \| pbcopy`) |
+| `MACOS_CERTIFICATE_PASSWORD` | Password of the `.p12` |
+| `MACOS_SIGN_IDENTITY` | Optional, e.g. `Developer ID Application: Name (TEAMID)` |
 | `APPLE_TEAM_ID` | Team ID |
-| `ASC_KEY_ID` | App-Store-Connect-API-Key-ID |
-| `ASC_ISSUER_ID` | Issuer ID |
-| `ASC_KEY_P8` | `.p8`-Datei, base64 |
+| `APPLE_ID` + `APPLE_APP_PASSWORD` | Apple ID and app-specific password, or … |
+| `ASC_KEY_ID` + `ASC_ISSUER_ID` + `ASC_KEY_P8` | … App Store Connect API key, the `.p8` base64 encoded |
 
-Der Schlüsselbund wird pro Lauf temporär angelegt und danach gelöscht. Secrets gehen bei
-Fork-Pull-Requests nicht mit, und der Workflow läuft ohnehin nur auf Tags.
+The keychain is created per run and deleted afterwards. Secrets are not exposed to pull requests
+from forks, and the workflow only runs on tags.
 
-## Einrichten
+## Setup
 
-1. App starten, `⌘,` für die Einstellungen.
-2. OpenAI-API-Key eintragen – landet im Schlüsselbund, nicht in den UserDefaults.
-3. Modell wählen. Standard ist `gpt-5-mini`; „Modelle laden“ holt die Liste des Accounts.
+1. Launch the app, press `⌘,` for settings.
+2. Enter your OpenAI API key. It goes into the keychain, not into UserDefaults.
+3. Pick a model. The default is `gpt-5-mini`; "Load Models" fetches the account's list.
 
-## Rechnung auslesen
+## Reading an invoice
 
-Vier Wege, alle gleichwertig:
+Four equivalent ways:
 
-- **Finder-Rechtsklick → Dienste → „Zahlungs-QR erzeugen“** (nach `./build.sh install`)
-- **Finder-Rechtsklick → Öffnen mit → InvoiceQR**
-- **Drag & Drop** aufs Fenster oder auf die Ablagefläche links in der Toolbar
-- **⌘O** im Fenster
+- **Finder right-click → Services → "Create Payment QR Code"** (after `./build.sh install`)
+- **Finder right-click → Open With → InvoiceQR**
+- **Drag and drop** onto the window or onto the drop area on the left of the toolbar
+- **⌘O** in the window
 
-Danach: Felder prüfen, QR-Code scannen. Jede Änderung im Formular baut den QR-Code sofort neu.
+Then check the fields and scan the code. Every edit in the form rebuilds the QR code immediately.
 
-Erscheint der Dienste-Eintrag nicht, hilft `/System/Library/CoreServices/pbs -flush` und ein
-Neustart des Finders. macOS zeigt Dienste nur für Apps aus `/Applications` oder `~/Applications`.
+If the Services entry does not show up, run `/System/Library/CoreServices/pbs -flush` and restart
+Finder. macOS only lists services for apps in `/Applications` or `~/Applications`.
 
-## Wie das Auslesen läuft
+## How the extraction works
 
-Die Datei geht base64-kodiert als `input_file` an die **Responses API**. Für PDFs zieht OpenAI
-serverseitig Text *und* Seitenbilder – gescannte Rechnungen funktionieren dadurch ohne eigenes OCR.
-Bilder gehen als `input_image`. Die Antwort ist über **Structured Outputs** (`strict: true`) auf ein
-JSON-Schema festgenagelt, siehe `Sources/Model/InvoiceExtraction.swift`.
+The file is sent base64 encoded as `input_file` to the **Responses API**. For PDFs OpenAI extracts
+text *and* page images server side, so scanned invoices work without local OCR. Images are sent as
+`input_image`. The answer is pinned to a JSON schema through **Structured Outputs**
+(`strict: true`), see `Sources/Model/InvoiceExtraction.swift`.
 
-Das Modell darf nichts erfinden: fehlende Angaben werden `null`, Auffälligkeiten landen in
-`warnings` und erscheinen als Hinweiskasten. `payment_mode` erkennt Fälle, in denen gar nicht
-überwiesen werden soll (SEPA-Lastschrift, bereits bezahlt, Kartenzahlung).
+The model must not invent anything: missing values become `null`, anything noteworthy lands in
+`warnings` and is shown as an advisory box. `payment_mode` detects cases where no transfer is
+wanted at all (SEPA direct debit, already paid, card payment). Warnings are requested in the app's
+language, so they match the rest of the interface.
 
-## QR-Code
+## The QR code
 
-EPC069-12, Version 002, UTF-8, Fehlerkorrektur M. Version 002 macht die BIC optional, deshalb
-genügt bei SEPA-IBANs der Empfängername plus IBAN. Grenzen, die die App durchsetzt:
+EPC069-12, version 002, UTF-8, error correction level M. Version 002 makes the BIC optional, so a
+payee name plus IBAN is enough for SEPA. Limits the app enforces:
 
-| Feld | Limit |
+| Field | Limit |
 |---|---|
-| Empfängername | 70 Zeichen |
-| IBAN | 34, Mod-97-10-geprüft |
-| Betrag | 0,01 – 999.999.999,99 EUR |
-| Purpose Code | 4 Zeichen |
-| Referenz (strukturiert) | 35 Zeichen |
-| Verwendungszweck | 140 Zeichen |
-| Hinweis an Empfänger | 70 Zeichen |
-| Nutzdaten gesamt | 331 Byte |
+| Payee name | 70 characters |
+| IBAN | 34, validated with mod-97-10 |
+| Amount | 0.01 – 999,999,999.99 EUR |
+| Purpose code | 4 characters |
+| Structured reference | 35 characters |
+| Remittance text | 140 characters |
+| Note to payee | 70 characters |
+| Payload total | 331 bytes |
 
-Strukturierte Referenz und freier Verwendungszweck schließen sich laut Norm aus – die App
-blockiert den QR-Code, solange beide gefüllt sind.
+A structured reference and a free-form remittance text are mutually exclusive per the standard, so
+the app blocks the QR code while both are filled.
 
-**Nur EUR.** GiroCode überträgt keine andere Währung; lautet die Rechnung auf etwas anderes,
-warnt die App und der Betrag muss geprüft werden.
+**EUR only.** A GiroCode cannot carry another currency; if the invoice is denominated differently
+the app warns and the amount needs checking.
 
-## Aufbau
+## Layout
 
 ```
 Sources/
-  App/         Einstiegspunkt, AppDelegate (Finder-Dienst, "Öffnen mit")
-  Model/       IBAN/BIC-Prüfung, Betragsparser, EPC-Nutzdaten, Extraktionsschema
-  Services/    OpenAI-Client, Schlüsselbund, Einstellungen, QR-Rendering
-  ViewModel/   AppModel – Zustand und Ablauf
-  Views/       Ablagefläche, Formular, QR-Panel, Einstellungen
+  App/         entry point, AppDelegate (Finder service, Open With)
+  Model/       IBAN/BIC validation, amount parser, EPC payload, extraction schema
+  Services/    OpenAI client, keychain, settings, QR rendering
+  ViewModel/   AppModel - state and flow
+  Views/       drop zone, form, QR panel, settings
 Resources/
-  Info.plist   NSServices + CFBundleDocumentTypes
+  Info.plist            NSServices and CFBundleDocumentTypes
+  Localizable.xcstrings  English source strings with German translations
 Tests/
-  PayloadChecks/  Prüfungen ohne Xcode-Testhost
+  PayloadChecks/  checks that run without an Xcode test host
 ```
 
-## Grenzen
+## Limits
 
-- Die App ist ad-hoc signiert und läuft ohne App-Sandbox. Für eine Weitergabe braucht es ein
-  Developer-Team in `project.yml`, Hardened Runtime und Notarisierung.
-- Dateien bis 30 MB.
-- **Vor dem Absenden der Überweisung Empfänger, IBAN und Betrag gegen die Rechnung prüfen.**
-  Das Modell kann sich irren, gerade bei mehreren IBANs im Dokument.
+- Files up to 30 MB.
+- The app is not sandboxed. Sandboxing is only required for the Mac App Store.
+- **Check payee, IBAN and amount against the invoice before sending the transfer.** The model can
+  be wrong, especially when the document contains several IBANs.

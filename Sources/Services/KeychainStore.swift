@@ -1,7 +1,7 @@
 import Foundation
 import Security
 
-/// API-Key im Login-Schlüsselbund, nicht in UserDefaults.
+/// API key in the login keychain, never in UserDefaults.
 enum KeychainStore {
 
     private static let service = "de.rvm.InvoiceQR"

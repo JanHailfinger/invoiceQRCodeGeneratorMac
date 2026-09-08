@@ -11,7 +11,7 @@ struct QRPanelView: View {
             qrCode(payload)
 
             if payload.isUsable {
-                Text("Mit der Banking-App scannen")
+                Text("Scan with your banking app")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -21,7 +21,7 @@ struct QRPanelView: View {
                     ForEach(payload.issues) { issue in
                         HStack(alignment: .firstTextBaseline, spacing: 6) {
                             Image(systemName: issue.isBlocking ? "xmark.circle.fill" : "exclamationmark.circle")
-                                .foregroundStyle(issue.isBlocking ? .red : .secondary)
+                                .foregroundStyle(issue.isBlocking ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
                             Text(issue.text)
                                 .font(.caption)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -34,23 +34,23 @@ struct QRPanelView: View {
             Spacer()
 
             HStack {
-                Text("\(payload.byteCount) / \(EPCPayload.maximumByteCount) Byte")
+                Text("\(payload.byteCount) / \(EPCPayload.maximumByteCount) bytes")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                 Spacer()
                 Menu {
-                    Button("QR-Bild kopieren") { model.copyQRImage() }
-                    Button("Nutzdaten kopieren") { model.copyPayload() }
-                    Button("Als PNG speichern …") { model.saveQRImage() }
+                    Button("Copy QR Image") { model.copyQRImage() }
+                    Button("Copy Payload") { model.copyPayload() }
+                    Button("Save as PNG…") { model.saveQRImage() }
                 } label: {
-                    Label("Teilen", systemImage: "square.and.arrow.up")
+                    Label("Share", systemImage: "square.and.arrow.up")
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
                 .disabled(!payload.isUsable)
             }
 
-            DisclosureGroup("Nutzdaten (EPC069-12)") {
+            DisclosureGroup("Payload (EPC069-12)") {
                 Text(payload.text.isEmpty ? "—" : payload.text)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
@@ -78,12 +78,12 @@ struct QRPanelView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .padding(16)
-                    .accessibilityLabel("SEPA-Zahlungs-QR-Code")
+                    .accessibilityLabel("SEPA payment QR code")
             } else {
                 VStack(spacing: 8) {
                     Image(systemName: "qrcode")
                         .font(.system(size: 40, weight: .ultraLight))
-                    Text("Pflichtfelder ergänzen")
+                    Text("Fill in the required fields")
                         .font(.caption)
                 }
                 .foregroundStyle(.gray)

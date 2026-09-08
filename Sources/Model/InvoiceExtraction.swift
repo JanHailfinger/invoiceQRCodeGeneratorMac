@@ -1,6 +1,6 @@
 import Foundation
 
-/// Ergebnis der OpenAI-Extraktion. Alle Felder optional – das Modell darf nichts erfinden.
+/// Result of the OpenAI extraction. Every field is optional - the model must not invent values.
 struct InvoiceExtraction: Codable, Sendable {
     var creditorName: String?
     var iban: String?
@@ -25,22 +25,26 @@ struct InvoiceExtraction: Codable, Sendable {
 
         var label: String {
             switch self {
-            case .bankTransfer: "Überweisung"
-            case .directDebit: "SEPA-Lastschrift"
-            case .alreadyPaid: "bereits bezahlt"
-            case .card: "Karte / Zahlungsdienstleister"
-            case .other: "andere"
-            case .unknown: "nicht erkennbar"
+            case .bankTransfer: NSLocalizedString("Bank transfer", comment: "Payment mode")
+            case .directDebit: NSLocalizedString("SEPA direct debit", comment: "Payment mode")
+            case .alreadyPaid: NSLocalizedString("Already paid", comment: "Payment mode")
+            case .card: NSLocalizedString("Card or payment provider", comment: "Payment mode")
+            case .other: NSLocalizedString("Other", comment: "Payment mode")
+            case .unknown: NSLocalizedString("Not recognized", comment: "Payment mode")
             }
         }
 
-        /// Hinweis, wenn eine Überweisung gar nicht erwünscht ist.
+        /// Shown when a bank transfer is not what the invoice asks for.
         var warning: String? {
             switch self {
-            case .directDebit: "Rechnung wird per SEPA-Lastschrift eingezogen – nicht zusätzlich überweisen."
-            case .alreadyPaid: "Rechnung ist laut Dokument bereits bezahlt."
-            case .card: "Zahlung läuft laut Dokument über Karte/Zahlungsdienstleister."
-            case .bankTransfer, .other, .unknown: nil
+            case .directDebit:
+                NSLocalizedString("This invoice is collected by SEPA direct debit. Do not transfer on top of that.", comment: "Payment mode warning")
+            case .alreadyPaid:
+                NSLocalizedString("According to the document this invoice has already been paid.", comment: "Payment mode warning")
+            case .card:
+                NSLocalizedString("According to the document payment runs through a card or payment provider.", comment: "Payment mode warning")
+            case .bankTransfer, .other, .unknown:
+                nil
             }
         }
     }
@@ -72,13 +76,13 @@ struct InvoiceExtraction: Codable, Sendable {
         invoiceNumber = try container.decodeIfPresent(String.self, forKey: .invoiceNumber)
         invoiceDate = try container.decodeIfPresent(String.self, forKey: .invoiceDate)
         dueDate = try container.decodeIfPresent(String.self, forKey: .dueDate)
-        // Unbekannte Werte nicht als Fehler behandeln.
+        // Never fail on an unexpected enum value.
         paymentMode = (try? container.decodeIfPresent(PaymentMode.self, forKey: .paymentMode)) ?? .unknown
         warnings = (try? container.decodeIfPresent([String].self, forKey: .warnings)) ?? []
     }
 
-    /// JSON-Schema für Structured Outputs (strict: alle Properties in `required`,
-    /// Optionalität über den Typ ["string","null"]).
+    /// JSON schema for Structured Outputs. Strict mode requires every property in `required`,
+    /// so optionality is expressed through the type ["string", "null"].
     static var jsonSchema: [String: Any] {
         func nullableString(_ description: String) -> [String: Any] {
             ["type": ["string", "null"], "description": description]
@@ -93,45 +97,52 @@ struct InvoiceExtraction: Codable, Sendable {
                 "payment_mode", "warnings",
             ],
             "properties": [
-                "creditor_name": nullableString("Name des Zahlungsempfängers exakt wie im Dokument, max. 70 Zeichen."),
-                "iban": nullableString("IBAN des Zahlungsempfängers ohne Leerzeichen. Niemals die IBAN des Rechnungsempfängers."),
-                "bic": nullableString("BIC/SWIFT des Empfängerinstituts, falls angegeben."),
-                "amount": nullableString("Offener Gesamtbetrag als Zahl, Punkt als Dezimaltrennzeichen, z. B. 1234.56."),
-                "currency": nullableString("ISO-4217-Code, z. B. EUR."),
-                "remittance_text": nullableString("Verwendungszweck, max. 140 Zeichen. Wörtlich, wenn das Dokument einen vorgibt, sonst Rechnungsnummer plus Kunden-/Referenznummer."),
-                "creditor_reference": nullableString("Strukturierte Creditor Reference (ISO 11649, beginnt mit RF), nur wenn das Dokument eine enthält."),
-                "invoice_number": nullableString("Rechnungsnummer."),
-                "invoice_date": nullableString("Rechnungsdatum als YYYY-MM-DD."),
-                "due_date": nullableString("Fälligkeitsdatum bzw. Zahlungsziel als YYYY-MM-DD."),
+                "creditor_name": nullableString("Name of the payee exactly as printed, at most 70 characters."),
+                "iban": nullableString("Payee IBAN without spaces. Never the IBAN of the invoice recipient."),
+                "bic": nullableString("BIC/SWIFT of the payee bank if the document states one."),
+                "amount": nullableString("Outstanding total as a number with a dot as decimal separator, e.g. 1234.56."),
+                "currency": nullableString("ISO 4217 code, e.g. EUR."),
+                "remittance_text": nullableString("Remittance information, at most 140 characters. Verbatim if the document prescribes one, otherwise invoice number plus customer or reference number."),
+                "creditor_reference": nullableString("Structured creditor reference per ISO 11649, starts with RF. Only if the document contains one."),
+                "invoice_number": nullableString("Invoice number."),
+                "invoice_date": nullableString("Invoice date as YYYY-MM-DD."),
+                "due_date": nullableString("Due date or payment deadline as YYYY-MM-DD."),
                 "payment_mode": [
                     "type": "string",
                     "enum": ["bank_transfer", "direct_debit", "already_paid", "card", "other", "unknown"],
-                    "description": "Wie laut Dokument gezahlt wird.",
+                    "description": "How the document says the invoice is paid.",
                 ],
                 "warnings": [
                     "type": "array",
                     "items": ["type": "string"],
-                    "description": "Kurze Hinweise auf Deutsch: Skonto, Teilzahlung, mehrere IBANs, unleserliche Stellen, abweichender Betrag.",
+                    "description": "Short notes about early payment discounts, partial payments, several IBANs, unreadable spots or a deviating amount.",
                 ],
             ],
         ]
     }
 
-    static let systemPrompt = """
-    Du extrahierst Zahlungsdaten aus einer Rechnung für einen SEPA-Überweisungs-QR-Code (EPC069-12 / GiroCode).
+    /// The model writes its warnings in the app's language, so they fit the rest of the UI.
+    static func systemPrompt(warningLanguage: String) -> String {
+        """
+        You extract payment details from an invoice for a SEPA credit transfer QR code \
+        (EPC069-12 / GiroCode).
 
-    Regeln:
-    - Nimm die Bankverbindung des Zahlungsempfängers (Rechnungssteller, Lieferant). Wenn im Dokument mehrere \
-    IBANs stehen, wähle die für diese Zahlung vorgesehene und vermerke die Mehrdeutigkeit in "warnings".
-    - "amount" ist der offene Gesamtbetrag inklusive Umsatzsteuer. Bereits geleistete Anzahlungen abziehen, \
-    wenn das Dokument einen Restbetrag ausweist. Skonto NICHT abziehen, sondern in "warnings" nennen.
-    - Bei Gutschriften oder negativem Restbetrag setze "amount" auf null und erkläre es in "warnings".
-    - Gibt das Dokument einen Verwendungszweck vor, übernimm ihn wörtlich. Sonst bilde ihn aus Rechnungsnummer \
-    und, falls vorhanden, Kundennummer.
-    - "creditor_reference" nur bei echter ISO-11649-Referenz (RF...), nicht die Rechnungsnummer hineinschreiben.
-    - Erkenne, ob überhaupt überwiesen werden soll: SEPA-Lastschrift/Einzug, bereits bezahlt, Kartenzahlung, \
-    PayPal usw. gehören in "payment_mode".
-    - Nichts erfinden und nichts raten. Fehlt eine Angabe, setze null.
-    - Antworte ausschließlich im vorgegebenen JSON-Schema.
-    """
+        Rules:
+        - Take the bank details of the payee (the issuer, the supplier). If the document lists \
+        several IBANs, pick the one meant for this payment and record the ambiguity in "warnings".
+        - "amount" is the outstanding total including tax. Subtract prepayments when the document \
+        states a remaining balance. Do NOT subtract an early payment discount; mention it in \
+        "warnings" instead.
+        - For credit notes or a negative balance set "amount" to null and explain it in "warnings".
+        - If the document prescribes remittance information, copy it verbatim. Otherwise build it \
+        from the invoice number and, when present, the customer number.
+        - Use "creditor_reference" only for a real ISO 11649 reference (RF...). Never put the \
+        invoice number there.
+        - Detect whether a transfer is wanted at all: SEPA direct debit, already paid, card, \
+        PayPal and so on belong in "payment_mode".
+        - Invent nothing and guess nothing. If a value is absent, set null.
+        - Write every entry in "warnings" in \(warningLanguage).
+        - Answer strictly in the given JSON schema.
+        """
+    }
 }

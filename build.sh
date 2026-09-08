@@ -1,12 +1,12 @@
 #!/bin/bash
-# InvoiceQR bauen, starten, verteilen.
+# Build, run and distribute InvoiceQR.
 #
-#   ./build.sh build     ad-hoc signierter Release-Build
-#   ./build.sh run       bauen und starten
-#   ./build.sh install    nach /Applications, registriert den Finder-Dienst
-#   ./build.sh dist      signiert, notarisiert, verpackt als DMG und PKG
-#   ./build.sh package   verpackt ohne Developer-ID-Zertifikat
-#   ./build.sh check     Logikprüfungen
+#   ./build.sh build     ad-hoc signed release build
+#   ./build.sh run       build and launch
+#   ./build.sh install   copy to /Applications and register the Finder service
+#   ./build.sh dist      sign, notarize and package as DMG and PKG
+#   ./build.sh package   package without a Developer ID certificate
+#   ./build.sh check     logic checks
 #   ./build.sh clean
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -19,7 +19,7 @@ generate() {
     xcodegen generate --quiet
 }
 
-# VERSION setzt die Versionsnummer im Bundle: VERSION=1.0.0 ./build.sh build
+# VERSION sets the bundle version: VERSION=1.0.0 ./build.sh build
 build() {
     generate
     local overrides=()
@@ -37,7 +37,7 @@ bundle_version() {
     /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist"
 }
 
-# "|| true" ist nötig, weil set -e sonst bei erfolglosem grep still abbricht.
+# The "|| true" matters: without it set -e aborts silently when grep finds nothing.
 find_identity() {
     security find-identity -v -p codesigning \
         | grep "$1" | head -1 | sed -E 's/.*"(.*)".*/\1/' || true
@@ -48,9 +48,9 @@ find_installer_identity() {
         | grep "Developer ID Installer" | head -1 | sed -E 's/.*"(.*)".*/\1/' || true
 }
 
-# DMG mit App und Programme-Verknüpfung zum Reinziehen.
+# DMG holding the app plus an Applications link to drag it into.
 make_dmg() {
-    # bash 3.2 kennt den Wert einer Variablen in derselben local-Zeile noch nicht.
+    # bash 3.2 cannot see a variable assigned earlier in the same local statement.
     local version="$1"
     local identity="$2"
     local dmg="InvoiceQR-$version.dmg"
@@ -71,7 +71,7 @@ make_dmg() {
     echo "$dmg"
 }
 
-# PKG installiert direkt nach /Applications, damit der Finder-Dienst gleich greift.
+# The PKG installs straight into /Applications so the Finder service works right away.
 make_pkg() {
     local version="$1"
     local identity="$2"
@@ -84,7 +84,7 @@ make_pkg() {
     echo "$pkg"
 }
 
-# Notarisierungs-Zugang: NOTARY_PROFILE, oder ASC_KEY_*, oder APPLE_ID + APPLE_APP_PASSWORD.
+# Notarization credentials: NOTARY_PROFILE, or ASC_KEY_*, or APPLE_ID + APPLE_APP_PASSWORD.
 notary_args() {
     if [ -n "${NOTARY_PROFILE:-}" ]; then
         echo "--keychain-profile|$NOTARY_PROFILE"
@@ -98,7 +98,7 @@ notary_args() {
 case "${1:-build}" in
     build)
         build
-        echo "Fertig: $APP"
+        echo "Done: $APP"
         ;;
     run)
         build
@@ -108,30 +108,32 @@ case "${1:-build}" in
         build
         rm -rf /Applications/InvoiceQR.app
         cp -R "$APP" /Applications/
-        # Dienste-Eintrag im Finder-Kontextmenü registrieren.
+        # Register the service entry in the Finder context menu.
         /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
             -f /Applications/InvoiceQR.app
         /System/Library/CoreServices/pbs -flush || true
         open /Applications/InvoiceQR.app
-        echo "Installiert: /Applications/InvoiceQR.app"
+        echo "Installed: /Applications/InvoiceQR.app"
         ;;
     dist)
+        # Certificate: SIGN_IDENTITY, otherwise the first "Developer ID Application"
+        # in the keychain. The team ID is derived from the certificate name.
         IDENTITY="${SIGN_IDENTITY:-$(find_identity "Developer ID Application")}"
         if [ -z "$IDENTITY" ]; then
-            echo "Kein 'Developer ID Application'-Zertifikat im Schlüsselbund." >&2
-            echo "Anlegen: Xcode > Settings > Accounts > Manage Certificates > + " >&2
+            echo "No 'Developer ID Application' certificate in the keychain." >&2
+            echo "Create one: Xcode > Settings > Accounts > Manage Certificates > +" >&2
             exit 1
         fi
 
-        # Team ID steckt in Klammern im Zertifikatsnamen.
+        # The team ID sits in parentheses at the end of the certificate name.
         TEAM="${APPLE_TEAM_ID:-$(echo "$IDENTITY" | sed -E 's/.*\(([A-Z0-9]{10})\)$/\1/')}"
         if [ -z "$TEAM" ]; then
-            echo "APPLE_TEAM_ID ist nicht gesetzt und nicht aus dem Zertifikat ableitbar." >&2
+            echo "APPLE_TEAM_ID is unset and cannot be derived from the certificate." >&2
             exit 1
         fi
         export APPLE_TEAM_ID="$TEAM"
 
-        echo "Signiere mit: $IDENTITY (Team $TEAM)"
+        echo "Signing with: $IDENTITY (team $TEAM)"
         generate
         xcodebuild \
             -project InvoiceQR.xcodeproj \
@@ -149,24 +151,24 @@ case "${1:-build}" in
         VERSION="${VERSION:-$(bundle_version)}"
         INSTALLER_IDENTITY="$(find_installer_identity)"
         [ -z "$INSTALLER_IDENTITY" ] && \
-            echo "Warnung: kein 'Developer ID Installer'-Zertifikat, PKG bleibt unsigniert." >&2
+            echo "Warning: no 'Developer ID Installer' certificate, the PKG stays unsigned." >&2
 
         IFS='|' read -r -a NOTARY <<< "$(notary_args)"
 
         if [ ${#NOTARY[@]} -eq 0 ] || [ -z "${NOTARY[0]}" ]; then
-            echo "Keine Notarisierungs-Zugangsdaten - signiert, aber nicht notarisiert." >&2
-            echo "Gatekeeper verlangt beim ersten Start weiterhin Rechtsklick > Öffnen." >&2
+            echo "No notarization credentials - signed but not notarized." >&2
+            echo "Gatekeeper will still require right-click > Open on first launch." >&2
             NOTARIZE=0
         else
             NOTARIZE=1
         fi
 
-        # Erst die App notarisieren und staplen, dann daraus DMG und PKG bauen -
-        # so trägt jede Kopie der App ihr Ticket auch offline.
+        # Notarize and staple the app first, then build DMG and PKG from it, so every
+        # copy of the app carries its ticket even offline.
         if [ "$NOTARIZE" = 1 ]; then
             APP_ZIP="$BUILD_DIR/InvoiceQR-app.zip"
             ditto -c -k --sequesterRsrc --keepParent "$APP" "$APP_ZIP"
-            echo "Notarisiere App ..."
+            echo "Notarizing the app ..."
             xcrun notarytool submit "$APP_ZIP" "${NOTARY[@]}" --wait --timeout 30m
             xcrun stapler staple "$APP"
             rm -f "$APP_ZIP"
@@ -177,21 +179,21 @@ case "${1:-build}" in
 
         if [ "$NOTARIZE" = 1 ]; then
             for artifact in "$DMG" "$PKG"; do
-                echo "Notarisiere $artifact ..."
+                echo "Notarizing $artifact ..."
                 xcrun notarytool submit "$artifact" "${NOTARY[@]}" --wait --timeout 30m
                 xcrun stapler staple "$artifact"
             done
         fi
 
-        echo "=== Prüfung ==="
+        echo "=== Verification ==="
         codesign --verify --deep --strict --verbose=2 "$APP"
         spctl -a -vvv -t install "$APP" || true
         pkgutil --check-signature "$PKG" | head -4 || true
         shasum -a 256 "$DMG" "$PKG"
-        echo "Fertig: $DMG und $PKG"
+        echo "Done: $DMG and $PKG"
         ;;
     package)
-        # Unsigniert bzw. ad-hoc verpacken - für Builds ohne Zertifikat.
+        # Ad-hoc packaging for builds without a certificate.
         build
         VERSION="${VERSION:-$(bundle_version)}"
         DMG="$(make_dmg "$VERSION" "")"
@@ -211,10 +213,10 @@ case "${1:-build}" in
         ;;
     clean)
         rm -rf "$BUILD_DIR" InvoiceQR.xcodeproj InvoiceQR-*.dmg InvoiceQR-*.pkg InvoiceQR-*.zip
-        echo "Aufgeräumt."
+        echo "Cleaned."
         ;;
     *)
-        echo "Verwendung: ./build.sh [build|run|install|dist|package|check|clean]" >&2
+        echo "Usage: ./build.sh [build|run|install|dist|package|check|clean]" >&2
         exit 1
         ;;
 esac

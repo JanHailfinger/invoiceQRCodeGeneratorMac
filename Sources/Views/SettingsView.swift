@@ -14,28 +14,28 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("OpenAI") {
-                SecureField("API-Key", text: Binding(
+                SecureField("API key", text: Binding(
                     get: { settings.apiKey },
                     set: { settings.apiKey = $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 ))
                 .textContentType(.password)
-                Text("Wird im Schlüsselbund gespeichert, nicht in den Einstellungen.")
+                Text("Stored in the keychain, not in the preferences.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                 HStack {
-                    TextField("Modell", text: Binding(
+                    TextField("Model", text: Binding(
                         get: { settings.model },
                         set: { settings.model = $0.trimmingCharacters(in: .whitespaces) }
                     ))
                     .font(.system(.body, design: .monospaced))
 
-                    Button("Modelle laden") { loadModels() }
+                    Button("Load Models") { loadModels() }
                         .disabled(!settings.hasAPIKey || loadState == .loading)
                 }
 
                 if !availableModels.isEmpty {
-                    Picker("Verfügbar", selection: Binding(
+                    Picker("Available", selection: Binding(
                         get: { settings.model },
                         set: { settings.model = $0 }
                     )) {
@@ -49,42 +49,42 @@ struct SettingsView: View {
                 case .loading:
                     HStack(spacing: 6) {
                         ProgressView().controlSize(.small)
-                        Text("Modelle werden abgerufen …").font(.caption)
+                        Text("Fetching models…").font(.caption)
                     }
                 case let .failed(message):
                     Text(message)
                         .font(.caption)
                         .foregroundStyle(.red)
                 case let .loaded(count):
-                    Text("\(count) Modelle gefunden.")
+                    Text("\(count) models found.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 case .idle:
-                    Text("Vorschlag: \(AppSettings.defaultModel) für den Alltag, ein größeres Modell bei schlechten Scans.")
+                    Text("Suggestion: \(AppSettings.defaultModel) for everyday use, a larger model for poor scans.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
 
-            Section("QR-Code") {
-                TextField("Hinweis an Empfänger (Standard)", text: Binding(
+            Section("QR code") {
+                TextField("Default note to payee", text: Binding(
                     get: { settings.beneficiaryHint },
                     set: { settings.beneficiaryHint = $0 }
                 ))
-                Toggle("Nutzdaten nach dem Auslesen automatisch kopieren", isOn: Binding(
+                Toggle("Copy the payload automatically after reading", isOn: Binding(
                     get: { settings.copyPayloadAutomatically },
                     set: { settings.copyPayloadAutomatically = $0 }
                 ))
             }
 
             Section("Finder") {
-                Text("„Zahlungs-QR erzeugen“ erscheint im Rechtsklick-Menü unter „Dienste“, sobald die App einmal aus dem Programme-Ordner gestartet wurde. Fehlt der Eintrag, hilft ein Neustart des Finders oder `pbs -flush`.")
+                Text("“Create Payment QR Code” appears in the right-click menu under Services once the app has been launched from the Applications folder. If the entry is missing, restart Finder or run `pbs -flush`.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460)
+        .frame(width: 470)
         .padding(.vertical, 8)
     }
 

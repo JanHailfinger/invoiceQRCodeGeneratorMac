@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// Einstellungen: Modell in UserDefaults, API-Key im Schlüsselbund.
+/// Settings: model in UserDefaults, API key in the keychain.
 @MainActor
 @Observable
 final class AppSettings {
@@ -14,12 +14,12 @@ final class AppSettings {
         didSet { UserDefaults.standard.set(model, forKey: Keys.model) }
     }
 
-    /// Zusatz, der als "Hinweis an Empfänger" (EPC-Feld 12) vorbelegt wird.
+    /// Prefilled into "note to payee" (EPC field 12).
     var beneficiaryHint: String {
         didSet { UserDefaults.standard.set(beneficiaryHint, forKey: Keys.hint) }
     }
 
-    /// QR gleich nach der Extraktion in die Zwischenablage legen.
+    /// Put the payload on the clipboard right after extraction.
     var copyPayloadAutomatically: Bool {
         didSet { UserDefaults.standard.set(copyPayloadAutomatically, forKey: Keys.autoCopy) }
     }
@@ -29,6 +29,13 @@ final class AppSettings {
     }
 
     var hasAPIKey: Bool { !apiKey.isEmpty }
+
+    /// The language the model should write its warnings in, named in English so the
+    /// prompt stays unambiguous ("German", "English", ...).
+    var warningLanguage: String {
+        let code = Locale.current.language.languageCode?.identifier ?? "en"
+        return Locale(identifier: "en_US").localizedString(forLanguageCode: code) ?? "English"
+    }
 
     private init() {
         let defaults = UserDefaults.standard
